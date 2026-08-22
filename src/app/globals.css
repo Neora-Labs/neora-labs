@@ -1,0 +1,306 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --neora-color-bg-default: #ffffff;
+  --neora-color-bg-subtle: #f7faf9;
+  --neora-color-bg-brand-soft: #f0fcf8;
+  --neora-color-bg-inverse: #0f1917;
+  --neora-color-text-primary: #182623;
+  --neora-color-text-secondary: #485c58;
+  --neora-color-text-brand: #087e6b;
+  --neora-color-text-inverse: #ffffff;
+  --neora-color-action-primary-bg: #087e6b;
+  --neora-color-action-primary-text: #ffffff;
+  --neora-color-action-primary-hover: #086456;
+  --neora-color-surface-default: #ffffff;
+  --neora-color-surface-raised: #ffffff;
+  --neora-color-border-default: #d5e0dd;
+  --neora-color-border-strong: #879b96;
+  --neora-color-teal-400: #3fd0b4;
+  --neora-color-core-white: #ffffff;
+  --neora-color-ink-950: #0f1917;
+  --neora-shadow-medium:
+    0 2px 6px -2px rgb(15 25 23 / 0.05),
+    0 8px 24px -6px rgb(15 25 23 / 0.1);
+  --neora-shadow-card: 0 1.9px 3.8px rgb(15 25 23 / 0.06);
+}
+
+html.dark {
+  --neora-color-bg-default: #0f1917;
+  --neora-color-bg-subtle: #182623;
+  --neora-color-bg-brand-soft: #074f46;
+  --neora-color-bg-inverse: #ffffff;
+  --neora-color-text-primary: #f7faf9;
+  --neora-color-text-secondary: #b3c3bf;
+  --neora-color-text-brand: #7de3cd;
+  --neora-color-text-inverse: #0f1917;
+  --neora-color-action-primary-bg: #3fd0b4;
+  --neora-color-action-primary-text: #0f1917;
+  --neora-color-action-primary-hover: #2bb89e;
+  --neora-color-surface-default: #182623;
+  --neora-color-surface-raised: #263733;
+  --neora-color-border-default: #344743;
+  --neora-color-border-strong: #627873;
+  --neora-color-teal-400: #3fd0b4;
+}
+
+#nosotros {
+  --neora-color-bg-default: #ffffff;
+  --neora-color-bg-subtle: #f7faf9;
+  --neora-color-bg-brand-soft: #f0fcf8;
+  --neora-color-text-primary: #182623;
+  --neora-color-text-secondary: #485c58;
+  --neora-color-text-brand: #087e6b;
+  --neora-color-text-inverse: #ffffff;
+  --neora-color-action-primary-bg: #087e6b;
+  --neora-color-action-primary-text: #ffffff;
+  --neora-color-action-primary-hover: #086456;
+  --neora-color-surface-default: #ffffff;
+  --neora-color-surface-raised: #ffffff;
+  --neora-color-border-default: #d5e0dd;
+  --neora-color-border-strong: #879b96;
+}
+
+@theme inline {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --color-bg-default: var(--neora-color-bg-default);
+  --color-bg-subtle: var(--neora-color-bg-subtle);
+  --color-bg-brand-soft: var(--neora-color-bg-brand-soft);
+  --color-bg-inverse: var(--neora-color-bg-inverse);
+  --color-text-primary: var(--neora-color-text-primary);
+  --color-text-secondary: var(--neora-color-text-secondary);
+  --color-text-brand: var(--neora-color-text-brand);
+  --color-text-inverse: var(--neora-color-text-inverse);
+  --color-action: var(--neora-color-action-primary-bg);
+  --color-action-fg: var(--neora-color-action-primary-text);
+  --color-action-hover: var(--neora-color-action-primary-hover);
+  --color-surface: var(--neora-color-surface-default);
+  --color-surface-raised: var(--neora-color-surface-raised);
+  --color-border-default: var(--neora-color-border-default);
+  --color-border-strong: var(--neora-color-border-strong);
+  --color-accent: var(--neora-color-teal-400);
+  --color-ink: var(--neora-color-ink-950);
+  --color-core-white: var(--neora-color-core-white);
+  --animate-marquee: marquee 48s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--neora-color-bg-default);
+  color: var(--neora-color-text-primary);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--neora-color-text-brand);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.reveal {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 500ms ease,
+      transform 500ms ease;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.brief-morph-shell {
+  position: fixed;
+  z-index: 60;
+  top: var(--from-top);
+  left: var(--from-left);
+  width: var(--from-width);
+  height: var(--from-height);
+  overflow: hidden;
+  border: 1px solid var(--neora-color-border-default);
+  border-radius: 1.5rem;
+  background: var(--neora-color-surface-raised);
+  box-shadow: var(--neora-shadow-medium);
+}
+
+.brief-morph-shell.is-expanded {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-color: transparent;
+  border-radius: 0;
+  background: var(--neora-color-bg-default);
+  box-shadow: none;
+}
+
+.brief-morph-content {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.brief-morph-content.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html.brief-morph > body > header,
+  html.brief-morph #contenido,
+  html.brief-morph > body > footer {
+    transition:
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  html.brief-active > body > header,
+  html.brief-active #contenido,
+  html.brief-active > body > footer {
+    transform: scale(0.96);
+    transform-origin: 50% 40%;
+    opacity: 0.4;
+    filter: blur(6px);
+    pointer-events: none;
+  }
+
+  .brief-morph-shell {
+    transition:
+      top 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      left 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      width 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-radius 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .brief-morph-content {
+    transition:
+      opacity 400ms ease 280ms,
+      transform 400ms ease 280ms;
+  }
+
+  .brief-morph-shell.is-exiting .brief-morph-content {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 200ms ease,
+      transform 200ms ease;
+  }
+}
+
+.lava-core {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lava-core-a {
+    animation: lava-core-a 20s ease-in-out infinite;
+  }
+
+  .lava-core-b {
+    animation: lava-core-b 16s ease-in-out infinite;
+    animation-delay: -6s;
+  }
+
+  .lava-core-c {
+    animation: lava-core-c 22s ease-in-out infinite;
+    animation-delay: -10s;
+  }
+
+  .lava-core-neora {
+    animation: lava-core-neora 12s ease-in-out infinite;
+    animation-delay: -3s;
+  }
+}
+
+@keyframes lava-core-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(3px, -4px) scale(1.06);
+  }
+  70% {
+    transform: translate(-2px, 3px) scale(0.97);
+  }
+}
+
+@keyframes lava-core-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-5px, 4px) scale(1.08);
+  }
+}
+
+@keyframes lava-core-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  45% {
+    transform: translate(4px, -3px) scale(0.94);
+  }
+}
+
+@keyframes lava-core-neora {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(-7px, -5px) scale(1.1);
+  }
+  55% {
+    transform: translate(6px, 4px) scale(0.92);
+  }
+  80% {
+    transform: translate(-2px, 7px) scale(1.06);
+  }
+}
