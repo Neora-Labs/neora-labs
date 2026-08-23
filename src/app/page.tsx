@@ -1,3 +1,4 @@
+import { ClosingCta } from "@/components/sections/ClosingCta";
 import { Hero } from "@/components/sections/Hero";
 import { Positioning } from "@/components/sections/Positioning";
 import { Process } from "@/components/sections/Process";
@@ -12,6 +13,7 @@ export default function Home() {
       <Services />
       <Process />
       <Values />
+      <ClosingCta />
     </main>
   );
 }

@@ -26,7 +26,7 @@ export function Logo({ variant, className, priority = false }: LogoProps) {
       alt="Neora Labs"
       width={175}
       height={44}
-      className={cn("h-11 w-[175px] object-contain", className)}
+      className={cn("object-contain", className ?? "h-11 w-[175px]")}
       priority={priority}
     />
   );

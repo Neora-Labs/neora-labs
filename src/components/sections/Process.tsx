@@ -6,7 +6,7 @@ export function Process() {
   return (
     <section
       id="proceso"
-      className="scroll-mt-[72px] bg-bg-default md:scroll-mt-[88px] xl:scroll-mt-[104px]"
+      className="scroll-mt-14 bg-bg-default md:scroll-mt-[88px] xl:scroll-mt-[104px]"
     >
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-5 py-16 md:px-10 md:py-20 xl:flex-row xl:items-start xl:justify-between xl:gap-16 xl:px-24 xl:py-[112px]">
         <Reveal className="max-w-[500px] xl:sticky xl:top-[120px]">

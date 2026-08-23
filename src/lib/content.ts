@@ -10,7 +10,7 @@ export const site = {
 export const navItems = [
   { href: "#servicios", label: "Servicios" },
   { href: "#proceso", label: "Proceso" },
-  { href: "#nosotros", label: "Nosotros" },
+  { href: "#nosotros", label: "Equipo" },
   { href: "#contacto", label: "Contacto" },
 ] as const;
 
@@ -26,22 +26,27 @@ export const heroSlides = [
   {
     id: "ai",
     overlay: "Inteligencia donde el retorno es medible.",
+    examplePrompt: "Que un asistente responda lo repetido y derive lo importante…",
   },
   {
     id: "automation",
     overlay: "Menos copiar a mano. Más proceso que avanza solo.",
+    examplePrompt: "Lead en la web al CRM, cita y seguimiento, sin copiar a mano…",
   },
   {
     id: "software",
     overlay: "Una solución propia cuando el problema lo pide.",
+    examplePrompt: "Necesito un producto propio, no otra landing…",
   },
   {
     id: "web",
     overlay: "Presencia digital clara, lista para captar.",
+    examplePrompt: "Una web que capte clientes y los lleve a WhatsApp…",
   },
   {
     id: "integrations",
     overlay: "Tus herramientas, conectadas. Sin reemplazar lo que funciona.",
+    examplePrompt: "Conectar ERP, pedidos y facturas sin cambiar lo que ya usamos…",
   },
 ] as const;
 
@@ -239,11 +244,12 @@ export const values = {
 export const international = {
   eyebrow: "PENSADOS PARA TRABAJAR SIN FRONTERAS",
   heading: ["Talento colombiano.", "Presencia europea.", "Estándares internacionales."],
-  body: "Colaboramos con startups y pymes de Europa y Estados Unidos, combinando proximidad, eficiencia y calidad técnica.",
+  body: "Colaboramos con startups y pymes desde Colombia, Polonia y España, combinando proximidad, eficiencia y calidad técnica.",
+  mapCaption: "Equipo y proyectos en Colombia, Polonia y España.",
   nodes: [
     { id: "colombia", label: "COLOMBIA" },
-    { id: "europa", label: "EUROPA" },
-    { id: "usa", label: "EE. UU." },
+    { id: "poland", label: "POLONIA" },
+    { id: "spain", label: "ESPAÑA" },
   ],
 } as const;
 
@@ -271,7 +277,7 @@ export const team = [
     id: "marta",
     name: "Marta Vidal",
     role: "Producto",
-    locationId: "europa",
+    locationId: "spain",
     city: "Barcelona",
     bio: "Traduce el negocio en decisiones de producto. Cuida el ritmo de las entregas y que cada avance se pueda ver, corregir y medir.",
   },
@@ -279,17 +285,17 @@ export const team = [
     id: "jonas",
     name: "Jonas Berger",
     role: "Diseño",
-    locationId: "europa",
-    city: "Berlín",
+    locationId: "poland",
+    city: "Varsovia",
     bio: "Da forma a interfaces claras y a una comunicación visual que no compite con el producto. El estándar es que se entienda a la primera.",
   },
   {
     id: "elena",
     name: "Elena Brooks",
     role: "Partnerships",
-    locationId: "usa",
-    city: "Austin",
-    bio: "Abre y cuida relaciones con startups y pymes en Estados Unidos. Asegura que la conversación sea cercana, en horario y en idioma de quien decide.",
+    locationId: "spain",
+    city: "Madrid",
+    bio: "Abre y cuida relaciones con startups y pymes en Europa. Asegura que la conversación sea cercana, en horario y en idioma de quien decide.",
   },
 ] as const satisfies ReadonlyArray<{
   id: string;
@@ -315,5 +321,5 @@ export const footer = {
   exploreLabel: "EXPLORA",
   contactLabel: "CONTACTO",
   copyright: "© 2026 Neora Labs. Todos los derechos reservados.",
-  locations: "COLOMBIA · EUROPA · EE. UU.",
+  locations: "COLOMBIA · POLONIA · ESPAÑA.",
 };
