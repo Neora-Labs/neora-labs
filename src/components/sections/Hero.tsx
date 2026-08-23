@@ -7,7 +7,7 @@ export function Hero() {
   return (
     <section
       id="inicio"
-      className="bg-bg-default scroll-mt-[72px] md:scroll-mt-[88px] xl:scroll-mt-[104px]"
+      className="bg-bg-default scroll-mt-14 md:scroll-mt-[88px] xl:scroll-mt-[104px]"
     >
       <Reveal className="mx-auto flex w-full max-w-[900px] flex-col items-center px-5 pt-16 pb-10 text-center md:px-10 md:pt-20 xl:pt-[72px]">
         <Badge>{hero.badge}</Badge>

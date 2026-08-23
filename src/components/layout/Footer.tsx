@@ -3,10 +3,7 @@ import { footer, navItems, site } from "@/lib/content";
 
 export function Footer() {
   return (
-    <footer
-      id="contacto"
-      className="scroll-mt-[72px] bg-ink text-core-white md:scroll-mt-[88px] xl:scroll-mt-[104px]"
-    >
+    <footer className="bg-ink text-core-white">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-5 pt-16 pb-10 md:px-10 xl:px-24">
         <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-[520px]">

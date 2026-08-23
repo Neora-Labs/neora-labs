@@ -174,7 +174,7 @@ export function HeroStage() {
   return (
     <div
       id="brief"
-      className="scroll-mt-[72px] md:scroll-mt-[88px] xl:scroll-mt-[104px]"
+      className="scroll-mt-14 md:scroll-mt-[88px] xl:scroll-mt-[104px]"
     >
       <HeroCarousel
         activeIndex={activeIndex}

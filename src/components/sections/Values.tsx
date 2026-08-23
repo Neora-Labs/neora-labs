@@ -6,7 +6,7 @@ export function Values() {
   return (
     <section
       id="nosotros"
-      className="scroll-mt-[72px] bg-bg-default md:scroll-mt-[88px] xl:scroll-mt-[104px]"
+      className="scroll-mt-14 bg-bg-default md:scroll-mt-[88px] xl:scroll-mt-[104px]"
     >
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-5 py-16 md:px-10 md:py-20 xl:gap-12 xl:px-24 xl:py-[104px]">
         <Reveal className="max-w-[720px]">

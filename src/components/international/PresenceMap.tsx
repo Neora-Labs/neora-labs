@@ -1,17 +1,18 @@
 "use client";
 
-import { useId } from "react";
-import { international, type LocationId } from "@/lib/content";
+import { international, team, type LocationId } from "@/lib/content";
 import { cn } from "@/lib/cn";
+import {
+  COUNTRY_ANCHORS,
+  COUNTRY_PATHS,
+  LAND_PATH,
+  MAP_VIEW,
+} from "@/components/international/worldMapPaths";
 
-const VIEW_W = 520;
-const VIEW_H = 500;
-const CENTER = { x: 260, y: 248 };
-
-const NODE_LAYOUT: Record<LocationId, { x: number; y: number; control: { x: number; y: number } }> = {
-  europa: { x: 118, y: 128, control: { x: 150, y: 200 } },
-  usa: { x: 402, y: 128, control: { x: 370, y: 200 } },
-  colombia: { x: 260, y: 412, control: { x: 200, y: 340 } },
+const LABEL_CLASS: Record<LocationId, string> = {
+  colombia: "-translate-x-1/2 translate-y-2",
+  poland: "translate-x-2 -translate-y-[calc(100%+6px)]",
+  spain: "-translate-x-[calc(100%+10px)] -translate-y-1/2",
 };
 
 type PresenceMapProps = {
@@ -21,92 +22,79 @@ type PresenceMapProps = {
 
 export function PresenceMap({ activeLocation, onActivate }: PresenceMapProps) {
   return (
-    <div
-      className="relative mx-auto aspect-[520/500] w-full min-w-0 max-w-[480px] text-text-brand xl:min-w-[280px]"
-      role="group"
-      aria-label="Neora conecta talento en Colombia con presencia en Europa y Estados Unidos."
-    >
-      <svg
-        className="pointer-events-none absolute inset-0 size-full"
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
-        fill="none"
-        aria-hidden="true"
+    <div className="relative mx-auto w-full min-w-0 max-w-[560px] text-text-brand xl:min-w-[320px]">
+      <div
+        className="relative aspect-[1000/520] w-full overflow-visible"
+        role="group"
+        aria-label={international.mapCaption}
       >
-        <circle cx={CENTER.x} cy={CENTER.y} r="68" stroke="currentColor" strokeOpacity="0.18" strokeWidth="1" />
-        <circle cx={CENTER.x} cy={CENTER.y} r="118" stroke="currentColor" strokeOpacity="0.14" strokeWidth="1" />
-        <circle cx={CENTER.x} cy={CENTER.y} r="168" stroke="currentColor" strokeOpacity="0.1" strokeWidth="1" />
+        <svg
+          className="size-full overflow-visible rounded-[28px] bg-bg-brand-soft"
+          viewBox={`0 0 ${MAP_VIEW.w} ${MAP_VIEW.h}`}
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d={LAND_PATH} className="fill-text-brand/12" />
+          {international.nodes.map((node) => {
+            const dimmed = activeLocation !== null && activeLocation !== node.id;
+            return (
+              <path
+                key={node.id}
+                d={COUNTRY_PATHS[node.id]}
+                className={cn(
+                  "cursor-pointer stroke-text-brand motion-safe:transition-opacity motion-safe:duration-500",
+                  dimmed ? "fill-text-brand/25 opacity-55" : "fill-text-brand/55",
+                )}
+                strokeWidth="1.2"
+                onPointerEnter={() => onActivate(node.id)}
+                onClick={() => onActivate(node.id)}
+              />
+            );
+          })}
+        </svg>
+
         {international.nodes.map((node) => {
-          const layout = NODE_LAYOUT[node.id];
+          const anchor = COUNTRY_ANCHORS[node.id];
           const dimmed = activeLocation !== null && activeLocation !== node.id;
+          const people = team.filter((member) => member.locationId === node.id);
           return (
-            <path
+            <button
               key={node.id}
-              d={`M ${CENTER.x} ${CENTER.y} Q ${layout.control.x} ${layout.control.y} ${layout.x} ${layout.y}`}
-              stroke="var(--neora-color-teal-400)"
-              strokeWidth="1.25"
-              strokeLinecap="round"
+              type="button"
+              onPointerEnter={() => onActivate(node.id)}
+              onFocus={() => onActivate(node.id)}
               className={cn(
-                "transition-opacity duration-500",
-                dimmed ? "opacity-[0.22]" : "opacity-[0.55]",
+                "absolute z-10 flex flex-col items-center gap-1.5 motion-safe:transition-opacity motion-safe:duration-500",
+                LABEL_CLASS[node.id],
+                dimmed && "opacity-55",
               )}
-            />
+              aria-pressed={activeLocation === node.id}
+              aria-label={`${node.label}. ${people.map((member) => `${member.name}, ${member.city}`).join(". ")}`}
+              style={{
+                left: `${(anchor.x / MAP_VIEW.w) * 100}%`,
+                top: `${(anchor.y / MAP_VIEW.h) * 100}%`,
+              }}
+            >
+              <span className="flex items-center">
+                {people.map((member, index) => (
+                  <span
+                    key={member.id}
+                    title={`${member.name} · ${member.city}`}
+                    className="size-2.5 rounded-full bg-text-brand ring-2 ring-bg-brand-soft"
+                    style={{ marginLeft: index === 0 ? 0 : -5 }}
+                  />
+                ))}
+              </span>
+              <span className="flex h-8 items-center justify-center rounded-3xl border border-text-brand bg-bg-brand-soft px-3 text-[11px] font-semibold tracking-[0.2px] text-text-brand">
+                {node.label}
+              </span>
+            </button>
           );
         })}
-      </svg>
-
-      <div className="pointer-events-none absolute top-[49.6%] left-1/2 flex size-[108px] -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-hidden rounded-full bg-bg-brand-soft">
-        <LavaCore />
       </div>
-
-      {international.nodes.map((node) => {
-        const layout = NODE_LAYOUT[node.id];
-        const dimmed = activeLocation !== null && activeLocation !== node.id;
-        return (
-          <button
-            key={node.id}
-            type="button"
-            onPointerEnter={() => onActivate(node.id)}
-            onFocus={() => onActivate(node.id)}
-            className={cn(
-              "absolute z-10 flex h-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-3xl border border-text-brand bg-bg-brand-soft px-5 motion-safe:transition-opacity motion-safe:duration-500",
-              dimmed && "opacity-55",
-            )}
-            aria-pressed={activeLocation === node.id}
-            style={{
-              left: `${(layout.x / VIEW_W) * 100}%`,
-              top: `${(layout.y / VIEW_H) * 100}%`,
-            }}
-          >
-            <span className="text-xs font-semibold tracking-[0.2px] text-text-brand">{node.label}</span>
-          </button>
-        );
-      })}
+      <p className="mt-4 text-center text-sm leading-6 text-text-secondary">
+        {international.mapCaption}
+      </p>
     </div>
-  );
-}
-
-function LavaCore() {
-  const filterId = `lava-goo-${useId().replaceAll(":", "")}`;
-
-  return (
-    <svg className="size-[88px]" viewBox="0 0 88 88" aria-hidden="true">
-      <defs>
-        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-          <feColorMatrix
-            in="blur"
-            mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
-            result="goo"
-          />
-        </filter>
-      </defs>
-      <g filter={`url(#${filterId})`}>
-        <circle className="lava-core lava-core-a" cx="40" cy="46" r="22" fill="var(--neora-color-ink-950)" />
-        <circle className="lava-core lava-core-b" cx="52" cy="40" r="16" fill="var(--neora-color-ink-950)" />
-        <circle className="lava-core lava-core-c" cx="44" cy="54" r="14" fill="var(--neora-color-ink-950)" />
-        <circle className="lava-core lava-core-neora" cx="50" cy="44" r="8" fill="var(--neora-color-teal-400)" />
-      </g>
-    </svg>
   );
 }

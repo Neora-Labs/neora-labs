@@ -9,7 +9,6 @@ import { navItems, services } from "@/lib/content";
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const [servicesOpen, setServicesOpen] = useState(false);
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -34,7 +33,6 @@ export function Header() {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
-        setServicesOpen(false);
         buttonRef.current?.focus();
         return;
       }
@@ -67,113 +65,108 @@ export function Header() {
 
   function closeOnNavigate() {
     setOpen(false);
-    setServicesOpen(false);
   }
 
   const restNav = navItems.filter((item) => item.href !== "#servicios");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border-default/60 bg-bg-default">
-      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-5 md:h-[88px] md:px-10 xl:h-[104px] xl:px-24">
-        <a href="#inicio" className="shrink-0" aria-label="Neora Labs, ir al inicio">
-          <ThemedLogo priority />
-        </a>
+    <>
+      <header className="sticky top-0 z-50 border-b border-border-default/60 bg-bg-default">
+        <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-4 md:h-[88px] md:px-10 xl:h-[104px] xl:px-24">
+          <a href="#inicio" className="min-w-0 shrink-0" aria-label="Neora Labs, ir al inicio">
+            <ThemedLogo priority className="h-8 w-[128px] md:h-11 md:w-[175px]" />
+          </a>
 
-        <nav
-          className="hidden items-center gap-[34px] lg:flex"
-          aria-label="Principal"
-        >
-          <ServicesMega />
-          {restNav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-sm font-semibold tracking-[0.1px] text-text-primary transition-colors hover:text-text-brand"
+          <nav
+            className="hidden items-center gap-[34px] lg:flex"
+            aria-label="Principal"
+          >
+            <ServicesMega />
+            {restNav.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-sm font-semibold tracking-[0.1px] text-text-primary transition-colors hover:text-text-brand"
+              >
+                {item.label}
+              </a>
+            ))}
+            <ThemeToggle />
+            <Button href="#contacto">Hablemos</Button>
+          </nav>
+
+          <button
+            ref={buttonRef}
+            type="button"
+            className="inline-flex size-11 items-center justify-center gap-2 rounded-[14px] text-text-primary transition-colors duration-200 hover:bg-bg-brand-soft min-[360px]:h-12 min-[360px]:w-auto min-[360px]:px-3 lg:hidden"
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={open}
+            aria-controls={panelId}
+            onClick={() => setOpen((value) => !value)}
+          >
+            <span className="sr-only">{open ? "Cerrar menú" : "Abrir menú"}</span>
+            <MenuToggle open={open} />
+            <span
+              aria-hidden="true"
+              className="hidden w-[52px] text-[11px] font-semibold tracking-[1.6px] min-[360px]:inline"
             >
-              {item.label}
-            </a>
-          ))}
-          <ThemeToggle />
-          <Button href="#contacto">Hablemos</Button>
-        </nav>
-
-        <button
-          ref={buttonRef}
-          type="button"
-          className="inline-flex size-12 items-center justify-center rounded-[14px] text-text-primary lg:hidden"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => {
-            if (open) {
-              setOpen(false);
-              setServicesOpen(false);
-            } else {
-              setOpen(true);
-            }
-          }}
-        >
-          <span className="sr-only">{open ? "Cerrar menú" : "Abrir menú"}</span>
-          {open ? <CloseIcon /> : <MenuIcon />}
-        </button>
-      </div>
+              {open ? "CERRAR" : "MENÚ"}
+            </span>
+          </button>
+        </div>
+      </header>
 
       <div
         id={panelId}
         ref={panelRef}
         hidden={!open}
         className={cn(
-          "border-t border-border-default bg-bg-default px-5 py-6 lg:hidden",
-          open ? "block" : "hidden",
+          "fixed inset-x-0 top-14 bottom-0 z-40 overflow-y-auto border-t border-border-default bg-bg-default px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:top-[88px] md:px-10 lg:hidden",
+          open ? "flex flex-col" : "hidden",
         )}
       >
-        <nav className="flex flex-col gap-4" aria-label="Móvil">
+        <nav
+          className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-6"
+          aria-label="Móvil"
+        >
           <div>
-            <button
-              type="button"
-              className="flex w-full items-center justify-between py-2 text-left text-base font-semibold text-text-primary"
-              aria-expanded={servicesOpen}
-              onClick={() => setServicesOpen((value) => !value)}
-            >
+            <p className="mb-3 text-[11px] font-semibold tracking-[1.4px] text-text-secondary">
               Servicios
-              <Chevron open={servicesOpen} />
-            </button>
-            {servicesOpen ? (
-              <div className="mt-1 mb-2 flex flex-col gap-1 border-l border-border-default pl-4">
-                {services.items.map((item) => (
-                  <a
-                    key={item.id}
-                    href={item.href}
-                    onClick={closeOnNavigate}
-                    className="py-2"
-                  >
-                    <span className="block text-[11px] font-semibold tracking-[0.9px] text-accent">
-                      {item.eyebrow}
-                    </span>
-                    <span className="text-sm font-semibold text-text-primary">{item.title}</span>
-                  </a>
-                ))}
-              </div>
-            ) : null}
+            </p>
+            <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+              {services.items.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.href}
+                  onClick={closeOnNavigate}
+                  className="block w-full rounded-2xl border border-border-default bg-surface px-3.5 py-3 text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft"
+                >
+                  {item.bar}
+                </a>
+              ))}
+            </div>
           </div>
-          {restNav.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={closeOnNavigate}
-              className="py-2 text-base font-semibold text-text-primary"
-            >
-              {item.label}
-            </a>
-          ))}
-          <div className="flex items-center gap-3 pt-2">
-            <ThemeToggle />
-            <Button href="#contacto" className="flex-1" onClick={closeOnNavigate}>
+          <div className="flex flex-col divide-y divide-border-default border-y border-border-default">
+            {restNav.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={closeOnNavigate}
+                className="py-3.5 text-base font-semibold text-text-primary"
+              >
+                {item.label}
+              </a>
+            ))}
+          </div>
+          <div className="mt-auto flex flex-col gap-3 pt-1 min-[400px]:flex-row min-[400px]:items-center">
+            <ThemeToggle className="self-start min-[400px]:self-auto" />
+            <Button href="#contacto" className="w-full min-[400px]:flex-1" onClick={closeOnNavigate}>
               Hablemos
             </Button>
           </div>
         </nav>
       </div>
-    </header>
+    </>
   );
 }
 
@@ -280,28 +273,27 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function MenuIcon() {
+function MenuToggle({ open }: { open: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+    <span className="relative block size-[22px]" aria-hidden="true">
+      <span
+        className={cn(
+          "absolute top-[6px] left-[2px] h-[2px] w-4 rounded-full bg-current transition-[top,left,width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          open && "top-[10px] left-[3px] w-[16px] rotate-45",
+        )}
       />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M6 6l12 12M18 6 6 18"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+      <span
+        className={cn(
+          "absolute top-[14px] left-[6px] h-[2px] w-3 rounded-full bg-current transition-[top,left,width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          open && "top-[10px] left-[3px] w-[16px] -rotate-45",
+        )}
       />
-    </svg>
+      <span
+        className={cn(
+          "absolute top-[4px] right-[1px] size-[5px] rounded-full bg-text-brand transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          open && "scale-0 opacity-0",
+        )}
+      />
+    </span>
   );
 }

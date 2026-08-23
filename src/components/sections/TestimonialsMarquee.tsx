@@ -6,7 +6,7 @@ export function TestimonialsMarquee() {
       <p className="px-5 text-xs font-semibold tracking-[0.2px] text-accent md:px-10 xl:px-24">
         {testimonials.eyebrow}
       </p>
-      <div className="group overflow-x-auto [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)] [scrollbar-width:none] motion-safe:overflow-hidden">
+      <div className="group overflow-x-auto py-1 [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)] [scrollbar-width:none] motion-safe:overflow-hidden">
         <div className="flex w-max motion-safe:animate-marquee motion-safe:group-hover:[animation-play-state:paused] motion-safe:group-focus-within:[animation-play-state:paused]">
           <TestimonialTrack />
           <TestimonialTrack hidden />

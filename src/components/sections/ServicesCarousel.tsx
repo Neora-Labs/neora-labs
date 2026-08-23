@@ -54,7 +54,7 @@ export function ServicesCarousel() {
         <span
           key={item.href}
           id={item.href.slice(1)}
-          className="absolute top-0 left-0 scroll-mt-[88px] xl:scroll-mt-[112px]"
+          className="absolute top-0 left-0 scroll-mt-14 md:scroll-mt-[88px] xl:scroll-mt-[104px]"
         />
       ))}
 

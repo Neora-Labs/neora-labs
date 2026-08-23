@@ -84,6 +84,7 @@ html.dark {
   --color-ink: var(--neora-color-ink-950);
   --color-core-white: var(--neora-color-core-white);
   --animate-marquee: marquee 48s linear infinite;
+  --animate-caret-blink: caret-blink 1.1s steps(1, end) infinite;
 }
 
 @keyframes marquee {
@@ -95,8 +96,32 @@ html.dark {
   }
 }
 
+@keyframes caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 56px;
+}
+
+@media (min-width: 768px) {
+  html {
+    scroll-padding-top: 88px;
+  }
+}
+
+@media (min-width: 1280px) {
+  html {
+    scroll-padding-top: 104px;
+  }
 }
 
 body {
@@ -230,77 +255,3 @@ body {
   }
 }
 
-.lava-core {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .lava-core-a {
-    animation: lava-core-a 20s ease-in-out infinite;
-  }
-
-  .lava-core-b {
-    animation: lava-core-b 16s ease-in-out infinite;
-    animation-delay: -6s;
-  }
-
-  .lava-core-c {
-    animation: lava-core-c 22s ease-in-out infinite;
-    animation-delay: -10s;
-  }
-
-  .lava-core-neora {
-    animation: lava-core-neora 12s ease-in-out infinite;
-    animation-delay: -3s;
-  }
-}
-
-@keyframes lava-core-a {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  40% {
-    transform: translate(3px, -4px) scale(1.06);
-  }
-  70% {
-    transform: translate(-2px, 3px) scale(0.97);
-  }
-}
-
-@keyframes lava-core-b {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-5px, 4px) scale(1.08);
-  }
-}
-
-@keyframes lava-core-c {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  45% {
-    transform: translate(4px, -3px) scale(0.94);
-  }
-}
-
-@keyframes lava-core-neora {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  25% {
-    transform: translate(-7px, -5px) scale(1.1);
-  }
-  55% {
-    transform: translate(6px, 4px) scale(0.92);
-  }
-  80% {
-    transform: translate(-2px, 7px) scale(1.06);
-  }
-}

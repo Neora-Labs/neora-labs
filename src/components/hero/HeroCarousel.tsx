@@ -16,6 +16,8 @@ type HeroCarouselProps = {
 
 const AUTOPLAY_MS = 5000;
 const CARD_SHIFT = 240;
+const TYPE_MS = 32;
+const TYPE_START_MS = 160;
 
 export function HeroCarousel({
   activeIndex,
@@ -27,7 +29,9 @@ export function HeroCarousel({
   const labelId = useId();
   const [paused, setPaused] = useState(false);
   const [prompt, setPrompt] = useState("");
+  const [composerFocused, setComposerFocused] = useState(false);
   const slide = heroSlides[activeIndex];
+  const showTypedExample = !prompt && !composerFocused;
   const count = heroSlides.length;
 
   useEffect(() => {
@@ -93,14 +97,18 @@ export function HeroCarousel({
           <p id={labelId} className="text-lg font-semibold leading-7 text-text-primary sm:text-xl sm:leading-8">
             {slide.overlay}
           </p>
-          <label className="mt-5 block">
+          <label className="relative mt-5 block">
             <span className="sr-only">{hero.composerPlaceholder}</span>
             <input
               type="text"
               value={prompt}
-              placeholder={hero.composerPlaceholder}
+              placeholder={showTypedExample ? undefined : hero.composerPlaceholder}
               onChange={(event) => setPrompt(event.target.value)}
-              onFocus={() => onRequestBudget(prompt)}
+              onFocus={() => {
+                setComposerFocused(true);
+                onRequestBudget(prompt);
+              }}
+              onBlur={() => setComposerFocused(false)}
               onKeyDown={(event) => {
                 event.stopPropagation();
                 if (event.key === "Enter") {
@@ -110,6 +118,7 @@ export function HeroCarousel({
               }}
               className="h-12 w-full rounded-[14px] border border-border-default bg-bg-default px-3.5 text-sm text-text-primary placeholder:text-text-secondary focus:border-border-strong"
             />
+            {showTypedExample ? <TypedExample text={slide.examplePrompt} /> : null}
           </label>
           <div className="mt-6 flex items-center justify-between gap-3">
             <div className="flex gap-2">
@@ -156,6 +165,46 @@ export function HeroCarousel({
         </div>
       </div>
     </div>
+  );
+}
+
+function TypedExample({ text }: { text: string }) {
+  const [typed, setTyped] = useState("");
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (media.matches) {
+      setTyped(text);
+      return;
+    }
+
+    setTyped("");
+    let index = 0;
+    let intervalId = 0;
+    const timeoutId = window.setTimeout(() => {
+      intervalId = window.setInterval(() => {
+        index += 1;
+        setTyped(text.slice(0, index));
+        if (index >= text.length) {
+          window.clearInterval(intervalId);
+        }
+      }, TYPE_MS);
+    }, TYPE_START_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, [text]);
+
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 flex items-center overflow-hidden px-3.5 text-sm text-text-secondary select-none"
+    >
+      <span className="whitespace-nowrap">{typed}</span>
+      <span className="ml-px inline-block h-[1em] w-px shrink-0 bg-text-secondary motion-safe:animate-caret-blink" />
+    </span>
   );
 }
 
