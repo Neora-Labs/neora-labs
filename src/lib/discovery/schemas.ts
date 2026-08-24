@@ -4,11 +4,11 @@ export const projectCategorySchema = z.enum(["web_app", "ai_automation", "integr
 
 export const projectSpecSchema = z.object({
   category: projectCategorySchema.nullable(),
-  businessGoal: z.string().trim().min(1).max(2_000).nullable(),
-  projectDescription: z.string().trim().min(1).max(4_000).nullable(),
-  platforms: z.array(z.string().trim().min(1).max(120)).max(20),
+  businessGoal: compactString(2_000).nullable(),
+  projectDescription: compactString(4_000).nullable(),
+  platforms: z.array(compactString(120)).max(20),
   users: z.object({
-    types: z.array(z.string().trim().min(1).max(120)).max(20),
+    types: z.array(compactString(120)).max(20),
     estimatedCount: z.number().int().nonnegative().max(1_000_000_000).nullable(),
   }),
   features: z.object({
@@ -17,11 +17,11 @@ export const projectSpecSchema = z.object({
     adminPanel: z.boolean().nullable(),
     notifications: z.boolean().nullable(),
     ai: z.boolean().nullable(),
-    additional: z.array(z.string().trim().min(1).max(160)).max(40),
+    additional: z.array(compactString(160)).max(40),
   }),
-  integrations: z.array(z.string().trim().min(1).max(160)).max(30),
-  existingSystem: z.string().trim().min(1).max(2_000).nullable(),
-  timeline: z.string().trim().min(1).max(500).nullable(),
+  integrations: z.array(compactString(160)).max(30),
+  existingSystem: compactString(2_000).nullable(),
+  timeline: compactString(500).nullable(),
   budget: z
     .object({
       min: z.number().nonnegative().optional(),
@@ -29,7 +29,7 @@ export const projectSpecSchema = z.object({
       currency: z.string().trim().min(3).max(8).optional(),
     })
     .nullable(),
-  openQuestions: z.array(z.string().trim().min(1).max(500)).max(30),
+  openQuestions: z.array(compactString(500)).max(30),
   discoveryConfidence: z.number().min(0).max(1),
 });
 
@@ -100,4 +100,21 @@ export const discoveryRequestSchema = z.discriminatedUnion("action", [
 
 function emptyToUndefined(value: string | undefined): string | undefined {
   return value || undefined;
+}
+
+function compactString(maxLength: number) {
+  return z
+    .string()
+    .trim()
+    .min(1)
+    .max(4_000)
+    .transform((value) => truncateAtWord(value, maxLength));
+}
+
+function truncateAtWord(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value;
+  const cutoff = value.slice(0, maxLength - 1);
+  const lastSpace = cutoff.lastIndexOf(" ");
+  const end = lastSpace >= Math.floor(maxLength * 0.6) ? lastSpace : cutoff.length;
+  return `${cutoff.slice(0, end).trimEnd()}…`;
 }

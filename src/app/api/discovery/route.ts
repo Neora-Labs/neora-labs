@@ -8,6 +8,7 @@ import {
 import { discoveryRequestSchema } from "@/lib/discovery/schemas";
 import { logEvent } from "@/lib/server/log";
 import { checkRateLimit } from "@/lib/server/rate-limit";
+import type { ZodIssue } from "zod";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   const parsed = discoveryRequestSchema.safeParse(payload);
   if (!parsed.success) {
     return Response.json(
-      { code: "VALIDATION_ERROR", error: parsed.error.issues[0]?.message ?? "Revisa los datos enviados." },
+      { code: "VALIDATION_ERROR", error: validationMessage(parsed.error.issues[0]) },
       { status: 400 },
     );
   }
@@ -62,4 +63,16 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+function validationMessage(issue: ZodIssue | undefined): string {
+  if (!issue) return "Revisa los datos enviados.";
+  if (issue.code === "too_big") {
+    return "El mensaje es demasiado largo. Resúmelo a un máximo de 4.000 caracteres.";
+  }
+  if (issue.code === "too_small") {
+    return issue.message.endsWith(".") ? issue.message : "Completa los campos obligatorios.";
+  }
+  if (issue.path.includes("email")) return "Introduce un correo válido.";
+  return "No pudimos validar una parte de la conversación. Inténtalo de nuevo.";
 }

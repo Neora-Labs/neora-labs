@@ -102,7 +102,11 @@ function fallbackExtraction(
   }
   spec.platforms = unique([...spec.platforms, ...detectPlatforms(lower)]);
 
-  return { spec, acknowledgement: "Perfecto, he incorporado ese contexto al alcance.", source: "fallback" };
+  return {
+    spec: projectSpecSchema.parse(spec),
+    acknowledgement: "Perfecto, he incorporado ese contexto al alcance.",
+    source: "fallback",
+  };
 }
 
 function detectCategory(text: string): ProjectCategory | null {
