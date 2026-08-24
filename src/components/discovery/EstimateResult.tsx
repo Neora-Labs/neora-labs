@@ -1,0 +1,8 @@
+import { formatEstimate } from "@/lib/discovery/summary";
+import type { DiscoverySnapshot } from "@/types/project";
+
+export function EstimateResult({ snapshot, onRestart }: { snapshot: DiscoverySnapshot; onRestart: () => Promise<void> | void }) {
+  if (!snapshot.estimate) return null;
+  const emailed = snapshot.delivery?.clientEmailSent;
+  return <section className="rounded-2xl border border-border-default bg-surface p-5 sm:p-6"><p className="text-xs font-semibold tracking-[0.2px] text-accent">ESTIMACIÓN PRELIMINAR</p><h2 className="mt-2 text-2xl font-bold tracking-[-0.5px] text-text-primary sm:text-3xl">{formatEstimate(snapshot.estimate.min, snapshot.estimate.max)}</h2><p className="mt-3 text-sm leading-6 text-text-secondary">Es una horquilla orientativa, no un presupuesto cerrado. La confirmaremos tras revisar el alcance, los riesgos y el calendario.</p><p className="mt-4 text-sm font-semibold text-text-primary">{emailed ? `Hemos enviado una copia a ${snapshot.contact?.email}.` : "La estimación queda disponible aquí. Nuestro equipo revisará la solicitud cuando la entrega por correo esté configurada."}</p><div className="mt-5 flex flex-col gap-2 sm:flex-row"><a href="#contacto" className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] bg-action px-5 text-sm font-semibold text-action-fg">Hablar con el equipo</a><button type="button" onClick={() => void onRestart()} className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-border-strong bg-surface px-5 text-sm font-semibold text-text-primary hover:bg-bg-brand-soft">Nuevo discovery</button></div></section>;
+}

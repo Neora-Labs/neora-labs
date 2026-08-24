@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
-import { process } from "@/lib/content";
+import { process as processContent } from "@/lib/content";
 
 const RAIL = 52;
 const NODE_R = 7;
-const steps = process.steps;
+const steps = processContent.steps;
 
 export function ProcessPath() {
   const reducedMotion = useSyncExternalStore(

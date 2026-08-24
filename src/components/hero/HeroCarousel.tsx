@@ -174,11 +174,11 @@ function TypedExample({ text }: { text: string }) {
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     if (media.matches) {
-      setTyped(text);
-      return;
+      const reducedMotionTimer = window.setTimeout(() => setTyped(text), 0);
+      return () => window.clearTimeout(reducedMotionTimer);
     }
 
-    setTyped("");
+    const resetTimer = window.setTimeout(() => setTyped(""), 0);
     let index = 0;
     let intervalId = 0;
     const timeoutId = window.setTimeout(() => {
@@ -192,6 +192,7 @@ function TypedExample({ text }: { text: string }) {
     }, TYPE_START_MS);
 
     return () => {
+      window.clearTimeout(resetTimer);
       window.clearTimeout(timeoutId);
       window.clearInterval(intervalId);
     };
