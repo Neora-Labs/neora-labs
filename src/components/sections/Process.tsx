@@ -1,8 +1,12 @@
 import { ProcessPath } from "@/components/sections/ProcessPath";
 import { Reveal } from "@/components/ui/Reveal";
-import { process } from "@/lib/content";
+import type { Messages } from "@/i18n/messages/es";
 
-export function Process() {
+type ProcessProps = {
+  process: Messages["process"];
+};
+
+export function Process({ process }: ProcessProps) {
   return (
     <section
       id="proceso"

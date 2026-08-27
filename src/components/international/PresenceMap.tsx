@@ -1,7 +1,8 @@
 "use client";
 
-import { international, team, type LocationId } from "@/lib/content";
+import { useMessages } from "@/components/i18n/MessagesProvider";
 import { cn } from "@/lib/cn";
+import { type LocationId, type TeamMember } from "@/lib/content";
 import {
   COUNTRY_ANCHORS,
   COUNTRY_PATHS,
@@ -10,9 +11,9 @@ import {
 } from "@/components/international/worldMapPaths";
 
 const LABEL_CLASS: Record<LocationId, string> = {
-  colombia: "-translate-x-1/2 translate-y-2",
-  poland: "translate-x-2 -translate-y-[calc(100%+6px)]",
-  spain: "-translate-x-[calc(100%+10px)] -translate-y-1/2",
+  colombia: "left-1/2 top-full mt-1.5 -translate-x-1/2",
+  poland: "left-1/2 bottom-full mb-1.5 -translate-x-1/2",
+  spain: "right-full mr-2 top-1/2 -translate-y-1/2",
 };
 
 type PresenceMapProps = {
@@ -21,16 +22,19 @@ type PresenceMapProps = {
 };
 
 export function PresenceMap({ activeLocation, onActivate }: PresenceMapProps) {
+  const { international, team } = useMessages();
   return (
     <div className="relative mx-auto w-full min-w-0 max-w-[560px] text-text-brand xl:min-w-[320px]">
       <div
-        className="relative aspect-[1000/520] w-full overflow-visible"
+        className="relative w-full overflow-visible"
+        style={{ aspectRatio: `${MAP_VIEW.w} / ${MAP_VIEW.h}` }}
         role="group"
         aria-label={international.mapCaption}
       >
         <svg
           className="size-full overflow-visible rounded-[28px] bg-bg-brand-soft"
           viewBox={`0 0 ${MAP_VIEW.w} ${MAP_VIEW.h}`}
+          preserveAspectRatio="xMidYMid meet"
           fill="none"
           aria-hidden="true"
         >
@@ -42,7 +46,7 @@ export function PresenceMap({ activeLocation, onActivate }: PresenceMapProps) {
                 key={node.id}
                 d={COUNTRY_PATHS[node.id]}
                 className={cn(
-                  "cursor-pointer stroke-text-brand motion-safe:transition-opacity motion-safe:duration-500",
+                  "cursor-pointer stroke-text-brand motion-safe:transition-[opacity,fill] motion-safe:duration-400",
                   dimmed ? "fill-text-brand/25 opacity-55" : "fill-text-brand/55",
                 )}
                 strokeWidth="1.2"
@@ -64,28 +68,32 @@ export function PresenceMap({ activeLocation, onActivate }: PresenceMapProps) {
               onPointerEnter={() => onActivate(node.id)}
               onFocus={() => onActivate(node.id)}
               className={cn(
-                "absolute z-10 flex flex-col items-center gap-1.5 motion-safe:transition-opacity motion-safe:duration-500",
-                LABEL_CLASS[node.id],
+                "group absolute z-10 flex size-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center motion-safe:transition-opacity motion-safe:duration-400",
                 dimmed && "opacity-55",
               )}
               aria-pressed={activeLocation === node.id}
-              aria-label={`${node.label}. ${people.map((member) => `${member.name}, ${member.city}`).join(". ")}`}
+              aria-label={`${node.label}. ${people.map((member) => memberLabel(member)).join(". ")}`}
               style={{
                 left: `${(anchor.x / MAP_VIEW.w) * 100}%`,
                 top: `${(anchor.y / MAP_VIEW.h) * 100}%`,
               }}
             >
-              <span className="flex items-center">
+              <span className="flex items-center motion-safe:transition-transform motion-safe:duration-300 group-hover:scale-[1.12] group-focus-visible:scale-[1.12]">
                 {people.map((member, index) => (
                   <span
                     key={member.id}
-                    title={`${member.name} · ${member.city}`}
+                    title={memberLabel(member)}
                     className="size-2.5 rounded-full bg-text-brand ring-2 ring-bg-brand-soft"
                     style={{ marginLeft: index === 0 ? 0 : -5 }}
                   />
                 ))}
               </span>
-              <span className="flex h-8 items-center justify-center rounded-3xl border border-text-brand bg-bg-brand-soft px-3 text-[11px] font-semibold tracking-[0.2px] text-text-brand">
+              <span
+                className={cn(
+                  "absolute flex h-8 items-center justify-center whitespace-nowrap rounded-3xl border border-text-brand bg-bg-brand-soft px-3 text-[11px] font-semibold tracking-[0.2px] text-text-brand",
+                  LABEL_CLASS[node.id],
+                )}
+              >
                 {node.label}
               </span>
             </button>
@@ -97,4 +105,9 @@ export function PresenceMap({ activeLocation, onActivate }: PresenceMapProps) {
       </p>
     </div>
   );
+}
+
+function memberLabel(member: Pick<TeamMember, "name" | "city">) {
+  const city = member.city?.trim();
+  return city ? `${member.name}, ${city}` : member.name;
 }

@@ -1,48 +1,40 @@
+import { defaultLocale, isLocale } from "@/i18n/config";
+import { getMessages } from "@/i18n/get-messages";
+import { interpolate } from "@/i18n/interpolate";
 import { buildBriefReport, parseBriefAnswers } from "@/lib/brief";
-import { site } from "@/lib/content";
+import { sendSiteEmail } from "@/lib/resend";
 
 export async function POST(request: Request) {
+  const fallback = getMessages(defaultLocale);
   let payload: unknown;
 
   try {
     payload = await request.json();
   } catch {
-    return Response.json({ error: "JSON inválido." }, { status: 400 });
+    return Response.json({ error: fallback.brief.invalidJson }, { status: 400 });
   }
 
-  const parsed = parseBriefAnswers(payload);
+  const requested = isRecord(payload) && typeof payload.locale === "string" ? payload.locale : null;
+  const locale = isLocale(requested) ? requested : defaultLocale;
+  const messages = getMessages(locale);
+
+  const parsed = parseBriefAnswers(payload, messages);
   if (!parsed.ok) {
     return Response.json({ error: parsed.error }, { status: 400 });
   }
 
-  const report = buildBriefReport(parsed.answers);
-  const emailed = await sendWithResend(parsed.answers.email, report.body);
+  const report = buildBriefReport(parsed.answers, messages, locale);
+  const emailed = await sendSiteEmail({
+    to: messages.site.email,
+    fromFallbackEmail: messages.site.email,
+    replyTo: parsed.answers.email,
+    subject: interpolate(messages.brief.emailSubject, { email: parsed.answers.email }),
+    text: report.body,
+  });
 
   return Response.json({ emailed });
 }
 
-async function sendWithResend(visitorEmail: string, body: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return false;
-  }
-
-  const from = process.env.BRIEF_FROM_EMAIL ?? `Neora Labs <${site.email}>`;
-
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [site.email],
-      reply_to: visitorEmail,
-      subject: `Brief de proyecto — ${visitorEmail}`,
-      text: body,
-    }),
-  });
-
-  return response.ok;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

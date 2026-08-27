@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type ReactNode, type RefObject } from "react";
+import { useMessages } from "@/components/i18n/MessagesProvider";
 import { cn } from "@/lib/cn";
-import { hero, heroSlides } from "@/lib/content";
+import { type HeroSlideId } from "@/lib/content";
 
-export type HeroSlideId = (typeof heroSlides)[number]["id"];
+export type { HeroSlideId };
 
 type HeroCarouselProps = {
   activeIndex: number;
@@ -26,6 +27,7 @@ export function HeroCarousel({
   cardRef,
   locked = false,
 }: HeroCarouselProps) {
+  const { hero, heroSlides, ui } = useMessages();
   const labelId = useId();
   const [paused, setPaused] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -69,7 +71,7 @@ export function HeroCarousel({
       <div
         className="relative z-20 mx-auto max-w-[560px]"
         role="group"
-        aria-roledescription="carrusel"
+        aria-roledescription={ui.carouselRole}
         aria-labelledby={labelId}
         tabIndex={0}
         onKeyDown={(event) => {
@@ -118,14 +120,14 @@ export function HeroCarousel({
               }}
               className="h-12 w-full rounded-[14px] border border-border-default bg-bg-default px-3.5 text-sm text-text-primary placeholder:text-text-secondary focus:border-border-strong"
             />
-            {showTypedExample ? <TypedExample text={slide.examplePrompt} /> : null}
+            {showTypedExample ? <TypedExample key={slide.examplePrompt} text={slide.examplePrompt} /> : null}
           </label>
           <div className="mt-6 flex items-center justify-between gap-3">
             <div className="flex gap-2">
-              <CarouselArrow label="Anterior" onClick={() => go(-1)}>
+              <CarouselArrow label={ui.hero.previous} onClick={() => go(-1)}>
                 <Chevron direction="left" />
               </CarouselArrow>
-              <CarouselArrow label="Siguiente" onClick={() => go(1)}>
+              <CarouselArrow label={ui.hero.next} onClick={() => go(1)}>
                 <Chevron direction="right" />
               </CarouselArrow>
             </div>
@@ -169,16 +171,18 @@ export function HeroCarousel({
 }
 
 function TypedExample({ text }: { text: string }) {
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotion,
+    getServerReducedMotion,
+  );
   const [typed, setTyped] = useState("");
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (media.matches) {
-      setTyped(text);
+    if (reducedMotion) {
       return;
     }
 
-    setTyped("");
     let index = 0;
     let intervalId = 0;
     const timeoutId = window.setTimeout(() => {
@@ -195,17 +199,31 @@ function TypedExample({ text }: { text: string }) {
       window.clearTimeout(timeoutId);
       window.clearInterval(intervalId);
     };
-  }, [text]);
+  }, [text, reducedMotion]);
 
   return (
     <span
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 flex items-center overflow-hidden px-3.5 text-sm text-text-secondary select-none"
     >
-      <span className="whitespace-nowrap">{typed}</span>
+      <span className="whitespace-nowrap">{reducedMotion ? text : typed}</span>
       <span className="ml-px inline-block h-[1em] w-px shrink-0 bg-text-secondary motion-safe:animate-caret-blink" />
     </span>
   );
+}
+
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getServerReducedMotion() {
+  return false;
 }
 
 function wrappedDelta(index: number, active: number, count: number): number {
@@ -239,8 +257,10 @@ function SlideMockup({ id }: { id: HeroSlideId }) {
 }
 
 function SoftwareMockup() {
+  const { ui } = useMessages();
+  const copy = ui.hero.mockups.software;
   return (
-    <MockFrame title="Producto">
+    <MockFrame title={copy.title}>
       <div className="flex gap-1.5">
         <span className="h-1.5 flex-1 rounded-full bg-bg-brand-soft" />
         <span className="h-1.5 w-8 rounded-full bg-border-default" />
@@ -248,7 +268,7 @@ function SoftwareMockup() {
       </div>
       <div className="mt-3 h-16 rounded-xl bg-bg-brand-soft" />
       <div className="mt-3 grid grid-cols-3 gap-2">
-        {["Inicio", "Cuenta", "Pagos"].map((label) => (
+        {copy.tabs.map((label) => (
           <div key={label} className="rounded-lg border border-border-default bg-surface p-2">
             <p className="text-[9px] font-semibold text-text-primary">{label}</p>
             <p className="mt-1 h-1.5 w-full rounded-full bg-border-default" />
@@ -260,17 +280,19 @@ function SoftwareMockup() {
 }
 
 function WebPresenceMockup() {
+  const { ui } = useMessages();
+  const copy = ui.hero.mockups.web;
   return (
-    <MockFrame title="Web">
+    <MockFrame title={copy.title}>
       <div className="flex items-center justify-between">
         <span className="h-1.5 w-10 rounded-full bg-border-strong" />
         <span className="rounded-full bg-action px-2 py-0.5 text-[8px] font-semibold text-action-fg">
-          Contactar
+          {copy.cta}
         </span>
       </div>
       <div className="mt-3 rounded-xl bg-bg-brand-soft px-2.5 py-3">
-        <p className="text-[10px] font-semibold text-text-primary">Tu marca, visible.</p>
-        <p className="mt-1 text-[9px] leading-4 text-text-secondary">Captación, cita y WhatsApp.</p>
+        <p className="text-[10px] font-semibold text-text-primary">{copy.heading}</p>
+        <p className="mt-1 text-[9px] leading-4 text-text-secondary">{copy.body}</p>
       </div>
       <div className="mt-2 h-2 w-2/3 rounded-full bg-border-default" />
     </MockFrame>
@@ -278,14 +300,12 @@ function WebPresenceMockup() {
 }
 
 function AutomationMockup() {
+  const { ui } = useMessages();
+  const copy = ui.hero.mockups.automation;
   return (
-    <MockFrame title="Flujo">
+    <MockFrame title={copy.title}>
       <div className="flex flex-col gap-2">
-        {[
-          { from: "Web", to: "CRM", status: "Nuevo lead" },
-          { from: "WhatsApp", to: "Cita", status: "Enviado" },
-          { from: "Recordatorio", to: "Seguimiento", status: "Programado" },
-        ].map((row) => (
+        {copy.rows.map((row) => (
           <div
             key={row.from}
             className="flex items-center justify-between rounded-lg border border-border-default bg-surface px-2.5 py-2"
@@ -302,14 +322,12 @@ function AutomationMockup() {
 }
 
 function SystemsMockup() {
+  const { ui } = useMessages();
+  const copy = ui.hero.mockups.systems;
   return (
-    <MockFrame title="Sistemas">
+    <MockFrame title={copy.title}>
       <div className="flex flex-col gap-2">
-        {[
-          { from: "Web", to: "ERP", status: "Sincronizado" },
-          { from: "Pedidos", to: "Facturas", status: "En curso" },
-          { from: "CRM", to: "Equipo", status: "Conectado" },
-        ].map((row) => (
+        {copy.rows.map((row) => (
           <div
             key={row.from}
             className="flex items-center justify-between rounded-lg border border-border-default bg-surface px-2.5 py-2"
@@ -326,18 +344,20 @@ function SystemsMockup() {
 }
 
 function AiMockup() {
+  const { ui } = useMessages();
+  const copy = ui.hero.mockups.ai;
   return (
-    <MockFrame title="Asistente">
+    <MockFrame title={copy.title}>
       <div className="flex flex-col gap-2">
         <div className="max-w-[85%] rounded-xl rounded-tl-md bg-bg-brand-soft px-2.5 py-2 text-[10px] leading-4 text-text-primary">
-          ¿Cuál es el estado del pedido 1842?
+          {copy.question}
         </div>
         <div className="ml-auto max-w-[85%] rounded-xl rounded-tr-md bg-action px-2.5 py-2 text-[10px] leading-4 text-action-fg">
-          Entregado ayer. Fuente: ERP, línea 1842.
+          {copy.answer}
         </div>
         <div className="rounded-lg border border-border-default bg-surface px-2.5 py-2">
-          <p className="text-[9px] font-semibold tracking-[0.2px] text-accent">ALERTA</p>
-          <p className="mt-1 text-[10px] text-text-primary">3 consultas repetidas esta semana</p>
+          <p className="text-[9px] font-semibold tracking-[0.2px] text-accent">{copy.alert}</p>
+          <p className="mt-1 text-[10px] text-text-primary">{copy.alertBody}</p>
         </div>
       </div>
     </MockFrame>

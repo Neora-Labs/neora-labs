@@ -1,32 +1,34 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/cn";
-import { services } from "@/lib/content";
+import { type ServiceId, type ServiceItem } from "@/lib/content";
 
-export type ServiceItem = (typeof services.items)[number];
-export type ServiceId = ServiceItem["id"];
+export type { ServiceId, ServiceItem };
 
 type ServiceVisualProps = {
   item: ServiceItem;
   className?: string;
+  sizes: string;
 };
 
-export function ServiceVisual({ item, className }: ServiceVisualProps) {
+export function ServiceVisual({ item, className, sizes }: ServiceVisualProps) {
   const [photoReady, setPhotoReady] = useState(false);
 
   return (
     <div className={cn("relative isolate overflow-hidden bg-ink", className)}>
       <BrandPlaceholder id={item.id} />
       {item.image ? (
-        // eslint-disable-next-line @next/next/no-img-element -- optional public asset swapped in later
-        <img
+        <Image
           src={item.image}
           alt=""
+          fill
+          sizes={sizes}
           onLoad={() => setPhotoReady(true)}
           onError={() => setPhotoReady(false)}
           className={cn(
-            "absolute inset-0 z-10 h-full w-full object-cover",
+            "z-10 object-cover object-[center_22%]",
             photoReady ? "opacity-100" : "opacity-0",
           )}
         />

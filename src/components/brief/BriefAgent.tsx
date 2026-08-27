@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Isotype } from "@/components/brand/Logo";
+import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
+import { localePath } from "@/i18n/config";
+import { interpolate } from "@/i18n/interpolate";
 import {
-  briefIntro,
-  briefSteps,
   buildMailtoHref,
   completedCount,
   formatStepAnswer,
+  getBriefSteps,
   getNextAgentTurn,
   validateTextStep,
   type BriefAnswers,
@@ -28,6 +31,7 @@ type SendState = "idle" | "sending" | "sent" | "mailto";
 
 const emptyAnswers: Partial<BriefAnswers> = {};
 const TURN_DELAY_MS = 400;
+const BUBBLE_EASE = [0.22, 1, 0.36, 1] as const;
 
 const composerClassName =
   "w-full rounded-[14px] border border-border-default bg-surface-raised px-3.5 py-3 text-sm text-text-primary placeholder:text-text-secondary focus:border-border-strong";
@@ -48,6 +52,9 @@ type BriefAgentProps = {
 };
 
 export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentProps) {
+  const messages = useMessages();
+  const locale = useLocale();
+  const briefSteps = getBriefSteps(messages);
   const formId = useId();
   const logRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useSyncExternalStore(
@@ -64,7 +71,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   const [sendState, setSendState] = useState<SendState>("idle");
   const [showTurn, setShowTurn] = useState(true);
 
-  const turn = getNextAgentTurn(answers);
+  const turn = getNextAgentTurn(answers, messages, locale);
   const visibleTurn = showTurn ? turn : null;
   const currentStep = visibleTurn?.kind === "step" ? visibleTurn.step : null;
   const report = visibleTurn?.kind === "report" ? visibleTurn.report : null;
@@ -92,7 +99,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
     setError(null);
     const next = { ...answers, [id]: value };
     setAnswers(next);
-    const nextTurn = getNextAgentTurn(next);
+    const nextTurn = getNextAgentTurn(next, messages, locale);
     if (nextTurn.kind === "step" && nextTurn.step.id === "problem" && pendingPrompt.current) {
       setDraft(pendingPrompt.current);
     } else {
@@ -102,7 +109,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   }
 
   function submitText(step: Extract<BriefStep, { kind: "text" }>) {
-    const message = validateTextStep(step.id, draft);
+    const message = validateTextStep(step.id, draft, messages);
     if (message) {
       setError(message);
       return;
@@ -126,7 +133,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
       const response = await fetch("/api/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(current.answers),
+        body: JSON.stringify({ locale, ...current.answers }),
       });
       const payload = (await response.json()) as { emailed?: boolean };
 
@@ -138,14 +145,17 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
       // Fall through to mailto so the visitor still can send the brief.
     }
 
-    window.location.href = buildMailtoHref(current);
+    window.location.href = buildMailtoHref(current, messages);
     setSendState("mailto");
   }
 
-  const messages = buildMessages(answers);
+  const chat = buildMessages(answers, briefSteps);
   const progressLabel = isComplete
-    ? "Informe listo"
-    : `${completedCount(answers)} / ${briefSteps.length}`;
+    ? messages.brief.reportReady
+    : interpolate(messages.brief.progress, {
+        completed: completedCount(answers, briefSteps),
+        total: briefSteps.length,
+      });
 
   return (
     <div
@@ -159,9 +169,9 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
           <Isotype variant="on-light" className="size-8 dark:hidden" />
           <Isotype variant="on-dark" className="hidden size-8 dark:block" />
           <div>
-            <p className="text-xs font-semibold tracking-[0.2px] text-accent">BRIEF DE PROYECTO</p>
+            <p className="text-xs font-semibold tracking-[0.2px] text-accent">{messages.brief.eyebrow}</p>
             <p id={`${formId}-title`} className="text-sm font-semibold text-text-primary">
-              Agente de alcance
+              {messages.brief.title}
             </p>
           </div>
         </div>
@@ -169,7 +179,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
           <p className="text-xs font-semibold tracking-[0.2px] text-text-secondary">{progressLabel}</p>
           {onClose ? (
             <button type="button" onClick={onClose} className={ghostButtonClassName}>
-              Volver a la web
+              {messages.brief.backToSite}
             </button>
           ) : null}
         </div>
@@ -181,37 +191,55 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
         aria-live="polite"
         aria-relevant="additions"
       >
-        <AgentBubble>{briefIntro}</AgentBubble>
-        {messages.map((message) =>
-          message.role === "agent" ? (
-            <AgentBubble key={message.id}>{message.text}</AgentBubble>
-          ) : (
-            <UserBubble key={message.id}>{message.text}</UserBubble>
-          ),
-        )}
-        {currentStep ? <AgentBubble>{currentStep.prompt}</AgentBubble> : null}
-        {showTurn ? null : <TypingIndicator />}
-
-        {report ? (
-          <div className="rounded-2xl border border-border-default bg-surface p-5 sm:p-6">
-            <p className="text-xs font-semibold tracking-[0.2px] text-accent">INVERSIÓN ORIENTATIVA</p>
-            <p className="mt-2 text-xl font-bold tracking-[-0.4px] text-text-primary sm:text-2xl">
-              {report.rangeLabel}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-text-secondary">
-              Se confirma en una llamada. No es un presupuesto cerrado.
-            </p>
-            <dl className="mt-4 flex flex-col gap-3">
-              {report.summaryLines.map((line) => (
-                <div key={line.label}>
-                  <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
-                  <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-4 text-sm leading-6 text-text-secondary">{report.nextStep}</p>
-          </div>
-        ) : null}
+        <AnimatePresence initial={!reducedMotion}>
+          <AgentBubble key="intro" reducedMotion={reducedMotion}>
+            {messages.brief.intro}
+          </AgentBubble>
+          {chat.map((message) =>
+            message.role === "agent" ? (
+              <AgentBubble key={message.id} reducedMotion={reducedMotion}>
+                {message.text}
+              </AgentBubble>
+            ) : (
+              <UserBubble key={message.id} reducedMotion={reducedMotion}>
+                {message.text}
+              </UserBubble>
+            ),
+          )}
+          {currentStep ? (
+            <AgentBubble key={`${currentStep.id}-q`} reducedMotion={reducedMotion}>
+              {currentStep.prompt}
+            </AgentBubble>
+          ) : null}
+          {showTurn ? null : <TypingIndicator key="typing" reducedMotion={reducedMotion} />}
+          {report ? (
+            <motion.div
+              key="report"
+              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+              transition={bubbleTransition(reducedMotion)}
+              className="rounded-2xl border border-border-default bg-surface p-5 sm:p-6"
+            >
+              <p className="text-xs font-semibold tracking-[0.2px] text-accent">{messages.brief.investmentHeading}</p>
+              <p className="mt-2 text-xl font-bold tracking-[-0.4px] text-text-primary sm:text-2xl">
+                {report.rangeLabel}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-text-secondary">
+                {messages.brief.investmentDisclaimer}
+              </p>
+              <dl className="mt-4 flex flex-col gap-3">
+                {report.summaryLines.map((line) => (
+                  <div key={line.label}>
+                    <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
+                    <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-4 text-sm leading-6 text-text-secondary">{report.nextStep}</p>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
 
       <div className="shrink-0 border-t border-border-default bg-bg-default">
@@ -281,7 +309,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
                 </p>
               ) : null}
               <button type="submit" className={cn(primaryButtonClassName, "self-end")}>
-                Enviar
+                {messages.brief.submit}
               </button>
             </form>
           ) : null}
@@ -294,17 +322,17 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
                 disabled={sendState === "sending" || sendState === "sent"}
                 className={cn(primaryButtonClassName, "sm:flex-1")}
               >
-                {sendLabel(sendState)}
+                {sendLabel(sendState, messages)}
               </button>
               <a
-                href="#contacto"
+                href={localePath(locale, "/contacto")}
                 onClick={onClose}
                 className={cn(secondaryButtonClassName, "sm:flex-1")}
               >
-                Hablemos
+                {messages.brief.talk}
               </a>
               <button type="button" onClick={restart} className={ghostButtonClassName}>
-                Nuevo brief
+                {messages.brief.newBrief}
               </button>
             </div>
           ) : null}
@@ -314,16 +342,19 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   );
 }
 
-function buildMessages(answers: Partial<BriefAnswers>): ChatMessage[] {
+function buildMessages(
+  answers: Partial<BriefAnswers>,
+  steps: readonly BriefStep[],
+): ChatMessage[] {
   const messages: ChatMessage[] = [];
 
-  for (const step of briefSteps) {
+  for (const step of steps) {
     const value = answers[step.id];
     if (value === undefined || value === "") {
       break;
     }
 
-    const text = formatStepAnswer(step, String(value));
+    const text = formatStepAnswer(step, String(value), steps);
 
     messages.push({ id: `${step.id}-q`, role: "agent", text: step.prompt });
     messages.push({ id: `${step.id}-a`, role: "user", text });
@@ -332,16 +363,16 @@ function buildMessages(answers: Partial<BriefAnswers>): ChatMessage[] {
   return messages;
 }
 
-function sendLabel(state: SendState): string {
+function sendLabel(state: SendState, messages: ReturnType<typeof useMessages>): string {
   switch (state) {
     case "sending":
-      return "Enviando…";
+      return messages.brief.sending;
     case "sent":
-      return "Informe enviado";
+      return messages.brief.sent;
     case "mailto":
-      return "Abrir correo de nuevo";
+      return messages.brief.mailtoAgain;
     case "idle":
-      return "Enviar a Neora";
+      return messages.brief.sendToNeora;
     default: {
       const _exhaustive: never = state;
       return _exhaustive;
@@ -349,27 +380,66 @@ function sendLabel(state: SendState): string {
   }
 }
 
-function AgentBubble({ children }: { children: string }) {
+function bubbleTransition(reducedMotion: boolean) {
+  if (reducedMotion) {
+    return { duration: 0 };
+  }
+
+  return { duration: 0.28, ease: BUBBLE_EASE };
+}
+
+function AgentBubble({
+  children,
+  reducedMotion,
+}: {
+  children: string;
+  reducedMotion: boolean;
+}) {
   return (
-    <p className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm leading-6 text-text-primary">
+    <motion.p
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+      transition={bubbleTransition(reducedMotion)}
+      className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm leading-6 text-text-primary"
+    >
       {children}
-    </p>
+    </motion.p>
   );
 }
 
-function UserBubble({ children }: { children: string }) {
+function UserBubble({
+  children,
+  reducedMotion,
+}: {
+  children: string;
+  reducedMotion: boolean;
+}) {
   return (
-    <p className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md bg-action px-4 py-3 text-sm leading-6 text-action-fg">
+    <motion.p
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+      transition={bubbleTransition(reducedMotion)}
+      className="ml-auto max-w-[85%] rounded-2xl rounded-tr-md bg-action px-4 py-3 text-sm leading-6 text-action-fg"
+    >
       {children}
-    </p>
+    </motion.p>
   );
 }
 
-function TypingIndicator() {
+function TypingIndicator({ reducedMotion }: { reducedMotion: boolean }) {
+  const { brief } = useMessages();
   return (
-    <p className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm text-text-secondary">
-      Pensando…
-    </p>
+    <motion.p
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+      transition={bubbleTransition(reducedMotion)}
+      className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm text-text-secondary"
+    >
+      {brief.thinking}
+    </motion.p>
   );
 }
 
