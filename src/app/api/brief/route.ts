@@ -32,6 +32,16 @@ export async function POST(request: Request) {
     text: report.body,
   });
 
+  if (emailed) {
+    await sendSiteEmail({
+      to: parsed.answers.email,
+      fromFallbackEmail: messages.site.email,
+      replyTo: messages.site.email,
+      subject: messages.brief.visitorEmailSubject,
+      text: report.visitorBody,
+    });
+  }
+
   return Response.json({ emailed });
 }
 

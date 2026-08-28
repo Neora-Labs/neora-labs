@@ -15,8 +15,9 @@ flowchart TB
   content["src/lib/content.ts — marketing copy"]
   tokens["src/app/globals.css — design tokens"]
   hero["HeroStage — carousel plus brief entry"]
-  briefUi["BriefAgent — client questionnaire"]
+  briefUi["BriefAgent — chat plus FSM fallback"]
   briefLib["src/lib/brief.ts plus brief-matrix.ts"]
+  chatApi["POST /api/brief/chat"]
   api["POST /api/brief"]
   resend["Resend optional"]
   mailto["mailto fallback"]
@@ -27,6 +28,8 @@ flowchart TB
   layout --> page
   page --> hero
   hero --> briefUi
+  briefUi --> chatApi
+  chatApi --> briefLib
   briefUi --> briefLib
   briefUi --> api
   api --> briefLib
@@ -38,19 +41,20 @@ flowchart TB
 - Homepage composition in `src/app/page.tsx`: Hero → Positioning → Services → Process → Values → ClosingCta.
 - Marketing copy and site metadata live in `src/lib/content.ts`. Components consume that module; they do not own strings.
 - Design tokens live in `src/app/globals.css` (`:root`, `html.dark`, `@theme inline`). Components use semantic Tailwind classes, not hex.
-- Capture flow: `HeroStage` opens `BriefMorphShell` → `BriefAgent`. The questionnaire FSM and report builder live in `src/lib/brief.ts`; investment bands live in `src/lib/brief-matrix.ts`. Submit goes to `POST /api/brief`.
+- Capture flow: `HeroStage` opens `BriefMorphShell` → `BriefAgent`. Free-text turns go to `POST /api/brief/chat` (OpenAI classifies slots). The FSM in `getNextAgentTurn` is the fallback if the key is missing or the model fails. The report builder lives in `src/lib/brief.ts`. Cost and weeks are derived in `src/lib/brief-matrix.ts` (effort × weekly rate × need margin × stage uncertainty). Submit goes to `POST /api/brief`.
 
 ## Directory map
 
 | Path | Role |
 | --- | --- |
-| `src/app/` | App Router: `[locale]` layout/page, `privacidad`, `globals.css`, `api/brief`, `api/contact` |
+| `src/app/` | App Router: `[locale]` layout/page, `privacidad`, `globals.css`, `api/brief`, `api/brief/chat`, `api/contact` |
 | `src/lib/content.ts` | Domain IDs (services, team) |
 | `src/lib/brief.ts` | Brief steps, validation, report, mailto |
+| `src/lib/brief-agent.ts` | Chat turn schema, slot merge, OpenAI prompt |
 | `src/lib/contact.ts` | Contact form parse, body, mailto |
 | `src/lib/resend.ts` | Shared Resend send helper |
 | `src/lib/cal.ts` | Cal.com embed URL guard |
-| `src/lib/brief-matrix.ts` | Investment bands (commercial data) |
+| `src/lib/brief-matrix.ts` | Effort weeks, rates, margins → € + plazo |
 | `src/lib/theme.ts` | Light/dark persistence and boot script |
 | `src/lib/cn.ts` | Class-name helper |
 | `src/components/sections/` | Homepage sections |
@@ -95,15 +99,19 @@ Restart `npm run dev` after adding or updating dependencies so Next.js picks up 
 
 ## Brief and API
 
-Six steps, in order: need → stage → scale → problem → integrations → email. `getNextAgentTurn` drives the client UI. Keep that sequence unless the user asks to change it.
+Same six fields: need, stage, scale, problem, integrations, email. In chat mode the order is not fixed — the model asks for what is missing. `getNextAgentTurn` still uses that sequence as fallback. Price and weeks never come from the model; they always come from `lookupInvestmentBand` (now includes `stage`).
 
-- Client: `src/components/brief/BriefAgent.tsx` POSTs completed answers to `/api/brief`.
-- Server: `src/app/api/brief/route.ts` parses with `parseBriefAnswers`, builds the report, then tries Resend.
+- Client: `src/components/brief/BriefAgent.tsx` talks to `POST /api/brief/chat`, then POSTs completed answers to `/api/brief`.
+- Chat server: `src/app/api/brief/chat/route.ts` classifies slots with OpenAI, re-validates IDs, and only then builds the report from the matrix.
+- Submit server: `src/app/api/brief/route.ts` parses with `parseBriefAnswers`, builds the report, emails Neora, and if that succeeds sends a copy to the visitor.
 - If `RESEND_API_KEY` is set and Resend succeeds, the API returns `{ emailed: true }` and the UI shows sent.
 - Otherwise the API returns `{ emailed: false }` (or the fetch fails) and the client falls back to `mailto:` via `buildMailtoHref`.
+- After the report, “Hablemos” opens the Cal.com overlay (`useAgenda`).
 
 Optional env:
 
+- `OPENAI_API_KEY` — brief chat agent (server only). Without it, the UI falls back to chips.
+- `OPENAI_MODEL` — optional, defaults to `gpt-4o-mini`
 - `RESEND_API_KEY` — send the brief and contact form to `site.email`
 - `BRIEF_FROM_EMAIL` — Resend `from` (defaults to `Neora Labs <info@neora-labs.com>`)
 - `NEXT_PUBLIC_CAL_URL` — public Cal.com booking URL (e.g. `https://cal.com/neoralabs/intro`)
@@ -121,7 +129,7 @@ Do not put secrets in client code. Do not retune bands in `src/lib/brief-matrix.
 
 - `.env*` is gitignored. Never commit API keys or credentials.
 - Validate brief payloads on the server (`parseBriefAnswers`) and contact payloads (`parseContactPayload`). Do not trust the client body.
-- `RESEND_API_KEY` stays in the Route Handler. It must not appear in client bundles or `NEXT_PUBLIC_*`.
+- `RESEND_API_KEY` and `OPENAI_API_KEY` stay in Route Handlers. They must not appear in client bundles or `NEXT_PUBLIC_*`.
 
 ## UI verification
 

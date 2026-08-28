@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Isotype } from "@/components/brand/Logo";
+import { useAgenda } from "@/components/agenda/AgendaProvider";
+import { ThemedIsotype } from "@/components/brand/Logo";
 import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
-import { localePath } from "@/i18n/config";
 import { interpolate } from "@/i18n/interpolate";
 import {
   buildMailtoHref,
@@ -14,11 +14,13 @@ import {
   getNextAgentTurn,
   validateTextStep,
   type BriefAnswers,
+  type BriefChoiceStep,
   type BriefReport,
   type BriefStep,
   type BriefStepId,
   type NeedId,
 } from "@/lib/brief";
+import type { BriefChatMessage, BriefChatResponse } from "@/lib/brief-agent";
 import { cn } from "@/lib/cn";
 
 type ChatMessage = {
@@ -28,13 +30,14 @@ type ChatMessage = {
 };
 
 type SendState = "idle" | "sending" | "sent" | "mailto";
+type CaptureMode = "chat" | "fsm";
 
 const emptyAnswers: Partial<BriefAnswers> = {};
 const TURN_DELAY_MS = 400;
 const BUBBLE_EASE = [0.22, 1, 0.36, 1] as const;
 
 const composerClassName =
-  "w-full rounded-[14px] border border-border-default bg-surface-raised px-3.5 py-3 text-sm text-text-primary placeholder:text-text-secondary focus:border-border-strong";
+  "w-full resize-none bg-transparent px-1 py-1 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none";
 
 const primaryButtonClassName =
   "inline-flex h-11 items-center justify-center rounded-[14px] bg-action px-5 text-sm font-semibold text-action-fg transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60";
@@ -45,6 +48,9 @@ const secondaryButtonClassName =
 const ghostButtonClassName =
   "inline-flex h-11 items-center justify-center rounded-[14px] px-3 text-sm font-semibold text-text-secondary transition-colors hover:text-text-primary";
 
+const sendButtonClassName =
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-action text-action-fg transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60";
+
 type BriefAgentProps = {
   initialNeed?: Exclude<NeedId, "unclear">;
   initialPrompt?: string;
@@ -54,28 +60,56 @@ type BriefAgentProps = {
 export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentProps) {
   const messages = useMessages();
   const locale = useLocale();
+  const { open: openAgenda } = useAgenda();
   const briefSteps = getBriefSteps(messages);
   const formId = useId();
   const logRef = useRef<HTMLDivElement>(null);
+  const answersRef = useRef<Partial<BriefAnswers>>(seedAnswers(initialNeed, initialPrompt));
+  const nextId = useRef(0);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotion,
     getServerReducedMotion,
   );
   const [answers, setAnswers] = useState<Partial<BriefAnswers>>(() =>
-    initialNeed ? { need: initialNeed } : emptyAnswers,
+    seedAnswers(initialNeed, initialPrompt),
   );
-  const pendingPrompt = useRef(initialPrompt?.trim() ?? "");
+  const [history, setHistory] = useState<ChatMessage[]>(() => seedUserMessage(initialPrompt));
+  const historyRef = useRef<ChatMessage[]>(seedUserMessage(initialPrompt));
+  const [mode, setMode] = useState<CaptureMode>("chat");
+  const [clarifyField, setClarifyField] = useState<BriefStepId | null>(null);
+  const [chatReport, setChatReport] = useState<BriefReport | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendState, setSendState] = useState<SendState>("idle");
   const [showTurn, setShowTurn] = useState(true);
+  const [busy, setBusy] = useState(() => Boolean(initialPrompt?.trim()));
 
-  const turn = getNextAgentTurn(answers, messages, locale);
-  const visibleTurn = showTurn ? turn : null;
-  const currentStep = visibleTurn?.kind === "step" ? visibleTurn.step : null;
-  const report = visibleTurn?.kind === "report" ? visibleTurn.report : null;
+  const fsmTurn = getNextAgentTurn(answers, messages, locale);
+  const visibleFsmTurn = mode === "fsm" && showTurn ? fsmTurn : null;
+  const currentStep = visibleFsmTurn?.kind === "step" ? visibleFsmTurn.step : null;
+  const report =
+    mode === "chat" ? chatReport : visibleFsmTurn?.kind === "report" ? visibleFsmTurn.report : null;
   const isComplete = Boolean(report);
+  const clarifyStep =
+    mode === "chat" && clarifyField
+      ? (briefSteps.find((step) => step.id === clarifyField) ?? null)
+      : null;
+  const choiceStep =
+    mode === "chat" && clarifyStep?.kind === "choice"
+      ? clarifyStep
+      : currentStep?.kind === "choice"
+        ? currentStep
+        : null;
+  const textStep =
+    mode === "chat"
+      ? composerTextStep(clarifyStep, messages.brief.composerPlaceholder)
+      : currentStep?.kind === "text"
+        ? currentStep
+        : null;
+  const needStep = briefSteps.find(isNeedStep);
+  const showEmpty = mode === "chat" && !isComplete && history.length === 0 && !busy;
+  const showTyping = busy || (mode === "fsm" && !showTurn);
 
   useEffect(() => {
     const log = logRef.current;
@@ -83,47 +117,186 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
       return;
     }
     log.scrollTop = log.scrollHeight;
-  }, [answers, currentStep, report, showTurn]);
+  }, [answers, currentStep, report, showTurn, history, busy]);
 
   useEffect(() => {
-    if (showTurn) {
+    if (mode !== "fsm" || showTurn) {
       return;
     }
 
     const delay = reducedMotion ? 0 : TURN_DELAY_MS;
     const timer = window.setTimeout(() => setShowTurn(true), delay);
     return () => window.clearTimeout(timer);
-  }, [showTurn, reducedMotion, answers]);
+  }, [showTurn, reducedMotion, answers, mode]);
 
-  function applyAnswer<K extends BriefStepId>(id: K, value: BriefAnswers[K]) {
+  async function requestChatTurn(
+    nextHistory: ChatMessage[],
+    nextAnswers: Partial<BriefAnswers>,
+    signal?: AbortSignal,
+  ) {
+    try {
+      const response = await fetch("/api/brief/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locale,
+          answers: nextAnswers,
+          messages: toApiMessages(nextHistory),
+        }),
+        signal,
+      });
+      const payload = (await response.json()) as BriefChatResponse & { error?: string };
+
+      if (signal?.aborted) {
+        return;
+      }
+
+      if (!response.ok || payload.fallback) {
+        enterFsm(nextAnswers, nextHistory, payload.fallback ? messages.brief.chatFallback : null);
+        return;
+      }
+
+      setAnswers(payload.answers);
+      answersRef.current = payload.answers;
+      setClarifyField(payload.clarifyField);
+      setChatReport(payload.report);
+      if (payload.reply) {
+        const withReply = [...nextHistory, createMessage("agent", payload.reply)];
+        setHistory(withReply);
+        historyRef.current = withReply;
+      } else {
+        setHistory(nextHistory);
+        historyRef.current = nextHistory;
+      }
+      setShowTurn(true);
+    } catch (caught) {
+      if (signal?.aborted || (caught instanceof DOMException && caught.name === "AbortError")) {
+        return;
+      }
+      enterFsm(nextAnswers, nextHistory, messages.brief.chatFallback);
+    } finally {
+      if (!signal?.aborted) {
+        setBusy(false);
+      }
+    }
+  }
+
+  function enterFsm(
+    nextAnswers: Partial<BriefAnswers>,
+    nextHistory: ChatMessage[],
+    notice: string | null,
+  ) {
+    const log = notice ? [...nextHistory, createMessage("agent", notice)] : nextHistory;
+    setMode("fsm");
+    setAnswers(nextAnswers);
+    answersRef.current = nextAnswers;
+    setHistory(log);
+    historyRef.current = log;
+    setClarifyField(null);
+    setChatReport(null);
+    setShowTurn(true);
+  }
+
+  function createMessage(role: ChatMessage["role"], text: string): ChatMessage {
+    nextId.current += 1;
+    return { id: `m-${nextId.current}`, role, text };
+  }
+
+  useEffect(() => {
+    if (historyRef.current.length === 0) {
+      return;
+    }
+
+    const abort = new AbortController();
+    void requestChatTurn(historyRef.current, answersRef.current, abort.signal);
+    return () => abort.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one kickoff per overlay session
+  }, []);
+
+  function applyFsmAnswer<K extends BriefStepId>(id: K, value: BriefAnswers[K]) {
     setError(null);
     const next = { ...answers, [id]: value };
     setAnswers(next);
-    const nextTurn = getNextAgentTurn(next, messages, locale);
-    if (nextTurn.kind === "step" && nextTurn.step.id === "problem" && pendingPrompt.current) {
-      setDraft(pendingPrompt.current);
-    } else {
-      setDraft("");
-    }
+    answersRef.current = next;
+    setDraft("");
     setShowTurn(false);
   }
 
-  function submitText(step: Extract<BriefStep, { kind: "text" }>) {
-    const message = validateTextStep(step.id, draft, messages);
-    if (message) {
-      setError(message);
+  function applyChatChoice(step: Extract<BriefStep, { kind: "choice" }>, optionId: string) {
+    const label = formatStepAnswer(step, optionId, briefSteps);
+    const nextAnswers = { ...answersRef.current, [step.id]: optionId } as Partial<BriefAnswers>;
+    const nextHistory = [...historyRef.current, createMessage("user", label)];
+    setAnswers(nextAnswers);
+    answersRef.current = nextAnswers;
+    setHistory(nextHistory);
+    historyRef.current = nextHistory;
+    setDraft("");
+    setError(null);
+    setBusy(true);
+    void requestChatTurn(nextHistory, nextAnswers);
+  }
+
+  function submitComposer() {
+    if (mode === "fsm") {
+      if (!currentStep || currentStep.kind !== "text") {
+        return;
+      }
+      const message = validateTextStep(currentStep.id, draft, messages);
+      if (message) {
+        setError(message);
+        return;
+      }
+      applyFsmAnswer(currentStep.id, draft.trim());
       return;
     }
-    applyAnswer(step.id, draft.trim());
+
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (clarifyStep?.kind === "text") {
+      const message = validateTextStep(clarifyStep.id, trimmed, messages);
+      if (message) {
+        setError(message);
+        return;
+      }
+      const nextAnswers = { ...answersRef.current, [clarifyStep.id]: trimmed };
+      const nextHistory = [...historyRef.current, createMessage("user", trimmed)];
+      setAnswers(nextAnswers);
+      answersRef.current = nextAnswers;
+      setHistory(nextHistory);
+      historyRef.current = nextHistory;
+      setDraft("");
+      setError(null);
+      setBusy(true);
+      void requestChatTurn(nextHistory, nextAnswers);
+      return;
+    }
+
+    const nextHistory = [...historyRef.current, createMessage("user", trimmed)];
+    setHistory(nextHistory);
+    historyRef.current = nextHistory;
+    setDraft("");
+    setError(null);
+    setBusy(true);
+    void requestChatTurn(nextHistory, answersRef.current);
   }
 
   function restart() {
-    pendingPrompt.current = "";
-    setAnswers(emptyAnswers);
+    const reset = emptyAnswers;
+    answersRef.current = reset;
+    historyRef.current = [];
+    setAnswers(reset);
+    setHistory([]);
     setDraft("");
     setError(null);
     setSendState("idle");
     setShowTurn(true);
+    setClarifyField(null);
+    setChatReport(null);
+    setMode("chat");
+    setBusy(false);
   }
 
   async function sendReport(current: BriefReport) {
@@ -149,25 +322,32 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
     setSendState("mailto");
   }
 
-  const chat = buildMessages(answers, briefSteps);
+  function handleSchedule() {
+    openAgenda();
+    onClose?.();
+  }
+
+  const fsmLog = mode === "fsm" ? buildMessages(answers, briefSteps) : [];
+  const visibleLog = mode === "chat" ? history : history.length > 0 ? history : fsmLog;
   const progressLabel = isComplete
     ? messages.brief.reportReady
     : interpolate(messages.brief.progress, {
         completed: completedCount(answers, briefSteps),
         total: briefSteps.length,
       });
+  const showComposer = !isComplete && (mode === "chat" || Boolean(textStep));
+  const composerLocked = busy || (mode === "fsm" && !showTurn);
 
   return (
     <div
-      className="flex h-full min-h-0 w-full flex-1 flex-col"
+      className="flex h-full min-h-0 w-full flex-1 flex-col bg-bg-default"
       role="dialog"
       aria-modal="true"
       aria-labelledby={`${formId}-title`}
     >
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-border-default px-4 py-3 sm:px-6">
+      <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <Isotype variant="on-light" className="size-8 dark:hidden" />
-          <Isotype variant="on-dark" className="hidden size-8 dark:block" />
+          <ThemedIsotype className="size-8" />
           <div>
             <p className="text-xs font-semibold tracking-[0.2px] text-accent">{messages.brief.eyebrow}</p>
             <p id={`${formId}-title`} className="text-sm font-semibold text-text-primary">
@@ -175,8 +355,14 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <p className="text-xs font-semibold tracking-[0.2px] text-text-secondary">{progressLabel}</p>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+          <SlotRail
+            steps={briefSteps}
+            answers={answers}
+            labels={messages.brief.slots}
+            ariaLabel={isComplete ? messages.brief.reportReady : messages.brief.slotProgress}
+            progressLabel={progressLabel}
+          />
           {onClose ? (
             <button type="button" onClick={onClose} className={ghostButtonClassName}>
               {messages.brief.backToSite}
@@ -187,130 +373,182 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
 
       <div
         ref={logRef}
-        className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 overflow-y-auto px-4 py-8 sm:px-6"
+        className={cn(
+          "mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto px-4 sm:px-6",
+          showEmpty ? "items-center justify-center py-6" : "gap-4 py-6",
+        )}
         aria-live="polite"
         aria-relevant="additions"
       >
-        <AnimatePresence initial={!reducedMotion}>
-          <AgentBubble key="intro" reducedMotion={reducedMotion}>
-            {messages.brief.intro}
-          </AgentBubble>
-          {chat.map((message) =>
-            message.role === "agent" ? (
-              <AgentBubble key={message.id} reducedMotion={reducedMotion}>
-                {message.text}
+        {showEmpty ? (
+          <EmptyStudio
+            headline={messages.brief.emptyHeadline}
+            intro={messages.brief.intro}
+            needStep={needStep}
+            selectedNeed={answers.need}
+            starters={messages.brief.starters}
+            reducedMotion={reducedMotion}
+            onSelectNeed={(optionId) => {
+              if (needStep) {
+                applyChatChoice(needStep, optionId);
+              }
+            }}
+          />
+        ) : (
+          <AnimatePresence initial={!reducedMotion}>
+            {visibleLog.map((message) =>
+              message.role === "agent" ? (
+                <AgentBubble key={message.id} reducedMotion={reducedMotion}>
+                  {message.text}
+                </AgentBubble>
+              ) : (
+                <UserBubble key={message.id} reducedMotion={reducedMotion}>
+                  {message.text}
+                </UserBubble>
+              ),
+            )}
+            {currentStep ? (
+              <AgentBubble key={`${currentStep.id}-q`} reducedMotion={reducedMotion}>
+                {currentStep.prompt}
               </AgentBubble>
-            ) : (
-              <UserBubble key={message.id} reducedMotion={reducedMotion}>
-                {message.text}
-              </UserBubble>
-            ),
-          )}
-          {currentStep ? (
-            <AgentBubble key={`${currentStep.id}-q`} reducedMotion={reducedMotion}>
-              {currentStep.prompt}
-            </AgentBubble>
-          ) : null}
-          {showTurn ? null : <TypingIndicator key="typing" reducedMotion={reducedMotion} />}
-          {report ? (
-            <motion.div
-              key="report"
-              initial={reducedMotion ? false : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
-              transition={bubbleTransition(reducedMotion)}
-              className="rounded-2xl border border-border-default bg-surface p-5 sm:p-6"
-            >
-              <p className="text-xs font-semibold tracking-[0.2px] text-accent">{messages.brief.investmentHeading}</p>
-              <p className="mt-2 text-xl font-bold tracking-[-0.4px] text-text-primary sm:text-2xl">
-                {report.rangeLabel}
-              </p>
-              <p className="mt-1 text-sm leading-6 text-text-secondary">
-                {messages.brief.investmentDisclaimer}
-              </p>
-              <dl className="mt-4 flex flex-col gap-3">
-                {report.summaryLines.map((line) => (
-                  <div key={line.label}>
-                    <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
-                    <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
+            ) : null}
+            {showTyping ? <TypingIndicator key="typing" reducedMotion={reducedMotion} /> : null}
+            {report ? (
+              <motion.div
+                key="report"
+                initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+                transition={bubbleTransition(reducedMotion)}
+                className="rounded-[28px] border border-border-default bg-surface p-6 sm:p-8"
+              >
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.2px] text-accent">
+                      {messages.brief.investmentHeading}
+                    </p>
+                    <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
+                      {report.rangeLabel}
+                    </p>
                   </div>
-                ))}
-              </dl>
-              <p className="mt-4 text-sm leading-6 text-text-secondary">{report.nextStep}</p>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.2px] text-accent">
+                      {messages.brief.timeHeading}
+                    </p>
+                    <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
+                      {report.timeLabel}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-text-secondary">
+                  {messages.brief.investmentDisclaimer}
+                </p>
+                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {report.summaryLines.map((line) => (
+                    <div key={line.label}>
+                      <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
+                      <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-6 text-sm leading-6 text-text-secondary">{report.nextStep}</p>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        )}
       </div>
 
-      <div className="shrink-0 border-t border-border-default bg-bg-default">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 px-4 py-4 sm:px-6">
-          {currentStep?.kind === "choice" ? (
-            <div className="flex flex-wrap gap-2" role="group" aria-label={currentStep.prompt}>
-              {currentStep.options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => applyAnswer(currentStep.id, option.id)}
-                  className="rounded-full border border-border-strong bg-surface px-3.5 py-2 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft"
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {currentStep?.kind === "text" ? (
+      <div className="shrink-0 bg-bg-default px-4 pb-5 pt-1 sm:px-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+          {showComposer ? (
             <form
-              className="flex flex-col gap-2"
+              className="rounded-[22px] border border-border-default bg-surface-raised p-3 shadow-sm"
               onSubmit={(event) => {
                 event.preventDefault();
-                submitText(currentStep);
+                submitComposer();
               }}
             >
-              {currentStep.inputMode === "email" ? (
-                <input
-                  id={`${formId}-email`}
-                  type="email"
-                  autoComplete="email"
-                  value={draft}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    setError(null);
-                  }}
-                  placeholder={currentStep.placeholder}
-                  className={composerClassName}
-                  aria-invalid={Boolean(error)}
-                  aria-describedby={error ? `${formId}-error` : undefined}
-                />
-              ) : (
-                <textarea
-                  id={`${formId}-problem`}
-                  rows={2}
-                  value={draft}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    setError(null);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      submitText(currentStep);
-                    }
-                  }}
-                  placeholder={currentStep.placeholder}
-                  className={cn(composerClassName, "resize-none")}
-                  aria-invalid={Boolean(error)}
-                  aria-describedby={error ? `${formId}-error` : undefined}
-                />
-              )}
+              {choiceStep && !isComplete && !showEmpty ? (
+                <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={choiceStep.prompt}>
+                  {choiceStep.options.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      disabled={composerLocked}
+                      onClick={() => {
+                        if (mode === "chat") {
+                          applyChatChoice(choiceStep, option.id);
+                          return;
+                        }
+                        applyFsmAnswer(choiceStep.id, option.id);
+                      }}
+                      className="rounded-full border border-border-strong bg-surface px-3.5 py-2 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="flex items-end gap-2">
+                {textStep?.inputMode === "email" ? (
+                  <input
+                    id={`${formId}-email`}
+                    type="email"
+                    autoComplete="email"
+                    value={draft}
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                      setError(null);
+                    }}
+                    placeholder={textStep.placeholder}
+                    className={cn(composerClassName, "min-w-0 flex-1 py-2")}
+                    disabled={composerLocked}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        submitComposer();
+                      }
+                    }}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${formId}-error` : undefined}
+                  />
+                ) : (
+                  <textarea
+                    id={`${formId}-composer`}
+                    rows={2}
+                    value={draft}
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                      setError(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        submitComposer();
+                      }
+                    }}
+                    placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
+                    className={cn(composerClassName, "min-w-0 flex-1")}
+                    disabled={composerLocked}
+                    aria-invalid={Boolean(error)}
+                    aria-describedby={error ? `${formId}-error` : undefined}
+                  />
+                )}
+                <button
+                  type="submit"
+                  disabled={composerLocked}
+                  className={sendButtonClassName}
+                  aria-label={messages.brief.sendAria}
+                >
+                  <SendIcon />
+                </button>
+              </div>
               {error ? (
-                <p id={`${formId}-error`} className="text-sm text-text-brand">
+                <p id={`${formId}-error`} className="px-1 pt-2 text-sm text-text-brand">
                   {error}
                 </p>
               ) : null}
-              <button type="submit" className={cn(primaryButtonClassName, "self-end")}>
-                {messages.brief.submit}
-              </button>
             </form>
           ) : null}
 
@@ -324,13 +562,9 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
               >
                 {sendLabel(sendState, messages)}
               </button>
-              <a
-                href={localePath(locale, "/contacto")}
-                onClick={onClose}
-                className={cn(secondaryButtonClassName, "sm:flex-1")}
-              >
+              <button type="button" onClick={handleSchedule} className={cn(secondaryButtonClassName, "sm:flex-1")}>
                 {messages.brief.talk}
-              </a>
+              </button>
               <button type="button" onClick={restart} className={ghostButtonClassName}>
                 {messages.brief.newBrief}
               </button>
@@ -342,11 +576,53 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   );
 }
 
+function seedAnswers(
+  need: Exclude<NeedId, "unclear"> | undefined,
+  prompt: string | undefined,
+): Partial<BriefAnswers> {
+  const next: Partial<BriefAnswers> = need ? { need } : {};
+  const text = prompt?.trim() ?? "";
+  if (text.length >= 10 && text.length <= 2000) {
+    next.problem = text;
+  }
+  return next;
+}
+
+function seedUserMessage(prompt: string | undefined): ChatMessage[] {
+  const text = prompt?.trim() ?? "";
+  if (!text) {
+    return [];
+  }
+
+  return [{ id: "seed-user", role: "user", text }];
+}
+
+function composerTextStep(
+  clarifyStep: BriefStep | null,
+  fallbackPlaceholder: string,
+): BriefStep & { kind: "text" } {
+  if (clarifyStep?.kind === "text") {
+    return clarifyStep;
+  }
+
+  return {
+    id: "problem",
+    kind: "text",
+    prompt: "",
+    placeholder: fallbackPlaceholder,
+    inputMode: "text",
+  };
+}
+
+function toApiMessages(history: ChatMessage[]): BriefChatMessage[] {
+  return history.map((message) => ({ role: message.role, text: message.text }));
+}
+
 function buildMessages(
   answers: Partial<BriefAnswers>,
   steps: readonly BriefStep[],
 ): ChatMessage[] {
-  const messages: ChatMessage[] = [];
+  const log: ChatMessage[] = [];
 
   for (const step of steps) {
     const value = answers[step.id];
@@ -356,11 +632,11 @@ function buildMessages(
 
     const text = formatStepAnswer(step, String(value), steps);
 
-    messages.push({ id: `${step.id}-q`, role: "agent", text: step.prompt });
-    messages.push({ id: `${step.id}-a`, role: "user", text });
+    log.push({ id: `${step.id}-q`, role: "agent", text: step.prompt });
+    log.push({ id: `${step.id}-a`, role: "user", text });
   }
 
-  return messages;
+  return log;
 }
 
 function sendLabel(state: SendState, messages: ReturnType<typeof useMessages>): string {
@@ -388,6 +664,110 @@ function bubbleTransition(reducedMotion: boolean) {
   return { duration: 0.28, ease: BUBBLE_EASE };
 }
 
+function isNeedStep(step: BriefStep): step is BriefChoiceStep<"need"> {
+  return step.id === "need" && step.kind === "choice";
+}
+
+function SlotRail({
+  steps,
+  answers,
+  labels,
+  ariaLabel,
+  progressLabel,
+}: {
+  steps: readonly BriefStep[];
+  answers: Partial<BriefAnswers>;
+  labels: Record<BriefStepId, string>;
+  ariaLabel: string;
+  progressLabel: string;
+}) {
+  return (
+    <nav aria-label={ariaLabel} className="min-w-0">
+      <p className="sr-only">{progressLabel}</p>
+      <ol className="flex items-center gap-1.5 sm:gap-3">
+        {steps.map((step) => {
+          const filled = Boolean(answers[step.id]);
+          return (
+            <li key={step.id} className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  filled ? "bg-action" : "bg-border-strong",
+                )}
+                title={labels[step.id]}
+              />
+              <span
+                className={cn(
+                  "hidden text-[11px] font-semibold tracking-[0.2px] md:inline",
+                  filled ? "text-accent" : "text-text-secondary",
+                )}
+              >
+                {labels[step.id]}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function EmptyStudio({
+  headline,
+  intro,
+  needStep,
+  selectedNeed,
+  starters,
+  reducedMotion,
+  onSelectNeed,
+}: {
+  headline: string;
+  intro: string;
+  needStep: BriefChoiceStep<"need"> | undefined;
+  selectedNeed: NeedId | undefined;
+  starters: Record<NeedId, string>;
+  reducedMotion: boolean;
+  onSelectNeed: (optionId: NeedId) => void;
+}) {
+  return (
+    <motion.div
+      initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={bubbleTransition(reducedMotion)}
+      className="relative flex w-full max-w-lg flex-col items-center px-2 text-center"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-0 size-40 rounded-full bg-bg-brand-soft blur-3xl"
+      />
+      <ThemedIsotype className="relative size-16" alt="" />
+      <h2 className="relative mt-6 text-2xl font-bold tracking-[-0.5px] text-text-primary sm:text-3xl">
+        {headline}
+      </h2>
+      <p className="relative mt-3 max-w-md text-sm leading-6 text-text-secondary">{intro}</p>
+      {needStep ? (
+        <div className="relative mt-6 flex flex-wrap justify-center gap-2" role="group" aria-label={needStep.prompt}>
+          {needStep.options.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onSelectNeed(option.id)}
+              className={cn(
+                "rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors",
+                selectedNeed === option.id
+                  ? "border-border-strong bg-bg-brand-soft text-text-brand"
+                  : "border-border-strong bg-surface text-text-primary hover:bg-bg-brand-soft",
+              )}
+            >
+              {starters[option.id]}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </motion.div>
+  );
+}
+
 function AgentBubble({
   children,
   reducedMotion,
@@ -396,15 +776,18 @@ function AgentBubble({
   reducedMotion: boolean;
 }) {
   return (
-    <motion.p
+    <motion.div
       initial={reducedMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
       transition={bubbleTransition(reducedMotion)}
-      className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm leading-6 text-text-primary"
+      className="flex items-start gap-2.5"
     >
-      {children}
-    </motion.p>
+      <ThemedIsotype className="mt-0.5 size-7 shrink-0" alt="" />
+      <p className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm leading-6 text-text-primary">
+        {children}
+      </p>
+    </motion.div>
   );
 }
 
@@ -431,15 +814,36 @@ function UserBubble({
 function TypingIndicator({ reducedMotion }: { reducedMotion: boolean }) {
   const { brief } = useMessages();
   return (
-    <motion.p
+    <motion.div
       initial={reducedMotion ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
       transition={bubbleTransition(reducedMotion)}
-      className="max-w-[85%] rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3 text-sm text-text-secondary"
+      className="flex items-start gap-2.5"
+      role="status"
+      aria-label={brief.thinking}
     >
-      {brief.thinking}
-    </motion.p>
+      <ThemedIsotype className="mt-0.5 size-7 shrink-0" alt="" />
+      <div className="flex items-center gap-1 rounded-2xl rounded-tl-md bg-bg-brand-soft px-4 py-3.5">
+        <span className="size-1.5 rounded-full bg-text-secondary animate-pulse" />
+        <span className="size-1.5 rounded-full bg-text-secondary animate-pulse [animation-delay:150ms]" />
+        <span className="size-1.5 rounded-full bg-text-secondary animate-pulse [animation-delay:300ms]" />
+      </div>
+    </motion.div>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden>
+      <path
+        d="M12 19V5M5 12l7-7 7 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 

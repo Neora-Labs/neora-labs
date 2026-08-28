@@ -50,9 +50,11 @@ export type BriefReport = {
   answers: BriefAnswers;
   band: InvestmentBand;
   rangeLabel: string;
+  timeLabel: string;
   nextStep: string;
   summaryLines: Array<{ label: string; value: string }>;
   body: string;
+  visitorBody: string;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -206,18 +208,31 @@ export function formatEuroBand(min: number, max: number, locale: Locale): string
   return `${formatThousands(min, locale)}–${formatThousands(max, locale)} k€`;
 }
 
+export function formatWeeksBand(min: number, max: number, messages: Messages): string {
+  return interpolate(messages.brief.weeksBand, {
+    min: String(min),
+    max: String(max),
+  });
+}
+
 export function buildBriefReport(
   answers: BriefAnswers,
   messages: Messages,
   locale: Locale,
 ): BriefReport {
   const steps = getBriefSteps(messages);
-  const band = lookupInvestmentBand(answers.need, answers.integrations, answers.scale);
+  const band = lookupInvestmentBand(
+    answers.need,
+    answers.integrations,
+    answers.scale,
+    answers.stage,
+  );
   const range = formatEuroBand(band.min, band.max, locale);
   const rangeLabel =
     band.kind === "definition"
       ? interpolate(messages.brief.definitionBand, { range })
       : range;
+  const timeLabel = formatWeeksBand(band.weeksMin, band.weeksMax, messages);
   const nextStep =
     band.kind === "definition" ? messages.brief.nextStepDefinition : messages.brief.nextStepCall;
 
@@ -241,11 +256,14 @@ export function buildBriefReport(
     ...summaryLines.map((line) => `${line.label}: ${line.value}`),
     `${messages.brief.nextStepLabel}: ${nextStep}`,
     interpolate(messages.brief.investmentLine, { range: rangeLabel }),
+    interpolate(messages.brief.timeLine, { weeks: timeLabel }),
     "",
     `${messages.brief.visitorContact}: ${answers.email}`,
   ].join("\n");
 
-  return { answers, band, rangeLabel, nextStep, summaryLines, body };
+  const visitorBody = [messages.brief.visitorEmailIntro, "", body].join("\n");
+
+  return { answers, band, rangeLabel, timeLabel, nextStep, summaryLines, body, visitorBody };
 }
 
 export function buildMailtoHref(report: BriefReport, messages: Messages): string {
@@ -321,7 +339,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseNeed(value: unknown): NeedId | null {
+export function parseNeed(value: unknown): NeedId | null {
   switch (value) {
     case "ai":
     case "automation":
@@ -335,7 +353,7 @@ function parseNeed(value: unknown): NeedId | null {
   }
 }
 
-function parseStage(value: unknown): StageId | null {
+export function parseStage(value: unknown): StageId | null {
   switch (value) {
     case "idea":
     case "operating":
@@ -346,7 +364,7 @@ function parseStage(value: unknown): StageId | null {
   }
 }
 
-function parseScale(value: unknown): ScaleId | null {
+export function parseScale(value: unknown): ScaleId | null {
   switch (value) {
     case "small":
     case "medium":
@@ -357,7 +375,7 @@ function parseScale(value: unknown): ScaleId | null {
   }
 }
 
-function parseIntegrations(value: unknown): IntegrationsId | null {
+export function parseIntegrations(value: unknown): IntegrationsId | null {
   switch (value) {
     case "none":
     case "one":
