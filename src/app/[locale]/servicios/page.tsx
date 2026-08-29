@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServiceHub } from "@/components/services/ServiceHub";
-import { defaultLocale, isLocale, locales, ogLocale } from "@/i18n/config";
+import { defaultLocale, isLocale, localeLanguages, locales, ogLocale } from "@/i18n/config";
 import { getMessages } from "@/i18n/get-messages";
 
 export function generateStaticParams() {
@@ -22,12 +22,7 @@ export async function generateMetadata({
     description: messages.services.intro,
     alternates: {
       canonical: `/${locale}/servicios`,
-      languages: {
-        es: "/es/servicios",
-        en: "/en/servicios",
-        pl: "/pl/servicios",
-        "x-default": "/es/servicios",
-      },
+      languages: localeLanguages("/servicios"),
     },
     openGraph: {
       title,

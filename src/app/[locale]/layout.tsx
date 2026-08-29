@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { MessagesProvider } from "@/components/i18n/MessagesProvider";
 import { getMessages } from "@/i18n/get-messages";
-import { htmlLang, isLocale, locales, ogLocale } from "@/i18n/config";
+import { htmlLang, isLocale, localeLanguages, locales, ogLocale } from "@/i18n/config";
 import { getCalEmbedUrl } from "@/lib/cal";
 import { themeBootScript } from "@/lib/theme";
 import "../globals.css";
@@ -41,13 +41,6 @@ export async function generateMetadata({
   }
 
   const messages = getMessages(locale);
-  const languages = {
-    es: "/es",
-    en: "/en",
-    pl: "/pl",
-    "x-default": "/es",
-  } as const;
-
   return {
     metadataBase: new URL(messages.site.url),
     title: messages.site.title,
@@ -55,7 +48,7 @@ export async function generateMetadata({
     applicationName: messages.site.name,
     alternates: {
       canonical: `/${locale}`,
-      languages,
+      languages: localeLanguages(),
     },
     openGraph: {
       title: messages.site.title,

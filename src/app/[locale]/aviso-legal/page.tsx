@@ -10,22 +10,22 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/privacidad">): Promise<Metadata> {
+}: PageProps<"/[locale]/aviso-legal">): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) {
     return {};
   }
   const messages = getMessages(locale);
   return {
-    title: `${messages.privacy.title} — ${messages.site.name}`,
-    description: messages.privacy.intro,
+    title: `${messages.legalNotice.title} — ${messages.site.name}`,
+    description: messages.legalNotice.intro,
     alternates: {
-      canonical: `/${locale}/privacidad`,
-      languages: localeLanguages("/privacidad"),
+      canonical: `/${locale}/aviso-legal`,
+      languages: localeLanguages("/aviso-legal"),
     },
     openGraph: {
-      title: `${messages.privacy.title} — ${messages.site.name}`,
-      description: messages.privacy.intro,
+      title: `${messages.legalNotice.title} — ${messages.site.name}`,
+      description: messages.legalNotice.intro,
       locale: ogLocale[locale],
       type: "website",
       siteName: messages.site.name,
@@ -33,23 +33,23 @@ export async function generateMetadata({
   };
 }
 
-export default async function PrivacyPage({ params }: PageProps<"/[locale]/privacidad">) {
+export default async function LegalNoticePage({ params }: PageProps<"/[locale]/aviso-legal">) {
   const { locale } = await params;
   if (!isLocale(locale)) {
     notFound();
   }
   const messages = getMessages(locale);
-  const { privacy, site } = messages;
+  const { legalNotice, site } = messages;
 
   return (
     <LegalArticle
-      title={privacy.title}
-      updated={privacy.updated}
-      intro={privacy.intro}
-      sections={privacy.sections}
+      title={legalNotice.title}
+      updated={legalNotice.updated}
+      intro={legalNotice.intro}
+      sections={legalNotice.sections}
       vars={{ email: site.email }}
       backHref={localePath(locale, "#inicio")}
-      backLabel={privacy.back}
+      backLabel={legalNotice.back}
     />
   );
 }

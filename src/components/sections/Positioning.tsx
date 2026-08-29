@@ -1,16 +1,16 @@
-import { TestimonialsMarquee } from "@/components/sections/TestimonialsMarquee";
+import { CriteriaMarquee } from "@/components/sections/CriteriaMarquee";
 import type { Messages } from "@/i18n/messages/es";
 
 type PositioningProps = {
-  testimonials: Messages["testimonials"];
-  testimonialsAria: string;
+  criteria: Messages["criteria"];
+  criteriaAria: string;
 };
 
-export function Positioning({ testimonials, testimonialsAria }: PositioningProps) {
+export function Positioning({ criteria, criteriaAria }: PositioningProps) {
   return (
     <section className="bg-bg-inverse">
       <div className="mx-auto w-full max-w-[1440px] py-12 md:py-[65px]">
-        <TestimonialsMarquee testimonials={testimonials} ariaLabel={testimonialsAria} />
+        <CriteriaMarquee criteria={criteria} ariaLabel={criteriaAria} />
       </div>
     </section>
   );

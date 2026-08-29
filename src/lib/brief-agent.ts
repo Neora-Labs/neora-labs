@@ -17,6 +17,7 @@ import {
 } from "@/lib/brief";
 
 export const MAX_CHAT_TURNS = 20;
+export const MAX_CHAT_MESSAGES = MAX_CHAT_TURNS * 2 + 2;
 export const MAX_MESSAGE_CHARS = 2000;
 export const CONFIDENCE_FLOOR = 0.7;
 
@@ -114,7 +115,7 @@ export function sanitizePartialAnswers(
 }
 
 export function parseChatHistory(input: unknown): BriefChatMessage[] | null {
-  if (!Array.isArray(input)) {
+  if (!Array.isArray(input) || input.length > MAX_CHAT_MESSAGES) {
     return null;
   }
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ServicePage } from "@/components/services/ServicePage";
-import { defaultLocale, isLocale, locales, ogLocale } from "@/i18n/config";
+import { defaultLocale, isLocale, localeLanguages, locales, ogLocale } from "@/i18n/config";
 import { getMessages } from "@/i18n/get-messages";
 import {
   isServiceSlug,
@@ -30,18 +30,12 @@ export async function generateMetadata({
   }
   const page = messages.services.servicePages[id];
   const title = `${page.metaTitle} — ${messages.site.name}`;
-  const languages = {
-    es: `/es/servicios/${slug}`,
-    en: `/en/servicios/${slug}`,
-    pl: `/pl/servicios/${slug}`,
-    "x-default": `/es/servicios/${slug}`,
-  } as const;
   return {
     title,
     description: page.metaDescription,
     alternates: {
       canonical: `/${locale}/servicios/${slug}`,
-      languages,
+      languages: localeLanguages(`/servicios/${slug}`),
     },
     openGraph: {
       title,

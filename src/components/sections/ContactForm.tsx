@@ -25,6 +25,7 @@ export function ContactForm() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [privacy, setPrivacy] = useState(false);
+  const [website, setWebsite] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendState, setSendState] = useState<SendState>("idle");
 
@@ -61,7 +62,7 @@ export function ContactForm() {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale, privacy: true, ...entry }),
+        body: JSON.stringify({ locale, privacy: true, website, ...entry }),
       });
       const payload = (await response.json()) as { emailed?: boolean; error?: string };
 
@@ -86,7 +87,21 @@ export function ContactForm() {
   const busy = sendState === "sending" || sendState === "sent";
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+    <form className="relative flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+      <div aria-hidden="true" className="pointer-events-none absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="contact-website">
+          Website
+          <input
+            id="contact-website"
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
+          />
+        </label>
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           id="contact-name"

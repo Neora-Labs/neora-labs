@@ -51,3 +51,13 @@ export function localePath(locale: Locale, path: string): string {
   }
   return `/${locale}/${path}`;
 }
+
+export function localeLanguages(path = ""): Record<string, string> {
+  const suffix = path === "" || path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
+  return {
+    es: `/es${suffix}`,
+    en: `/en${suffix}`,
+    pl: `/pl${suffix}`,
+    "x-default": `/es${suffix}`,
+  };
+}

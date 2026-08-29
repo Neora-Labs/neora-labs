@@ -18,6 +18,13 @@ const NAME_MAX = 80;
 const COMPANY_MAX = 80;
 const MESSAGE_MAX = 2000;
 
+export function isContactHoneypotTripped(payload: unknown): boolean {
+  if (!isRecord(payload)) {
+    return false;
+  }
+  return readTrimmed(payload.website).length > 0;
+}
+
 export function parseContactPayload(payload: unknown, messages: Messages): ParseContactResult {
   if (!isRecord(payload)) {
     return { ok: false, error: messages.contact.form.invalidPayload };

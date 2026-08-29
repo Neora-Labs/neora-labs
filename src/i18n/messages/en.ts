@@ -7,9 +7,14 @@ export const en = {
     name: "Neora Labs",
     title: "Neora Labs — Custom software for Europe and the US.",
     description:
-      "We design and build reliable software for startups and SMEs in Europe and the United States. Strategy, technology, and close communication in one team.",
+      "An international studio for custom software. Close execution in Spanish, English, and Polish. We start with the business decision, not the tool.",
     email: "info@neora-labs.com",
     url: "https://neoralabs.com",
+  },
+  api: {
+    rateLimited: "Too many requests. Wait a moment and try again.",
+    payloadTooLarge: "The submission is too large.",
+    generic: "Something went wrong. Try again.",
   },
   navItems: [
     { href: "/servicios", label: "Services" },
@@ -20,7 +25,7 @@ export const en = {
   hero: {
     badge: "CUSTOM SOFTWARE",
     headline: ["We turn real problems", "into digital products", "that move forward."],
-    body: "We design and build reliable software for startups and SMEs in Europe and the United States. Strategy, technology, and close communication in one team.",
+    body: "An international studio for custom software for startups and SMEs. Close execution in Spanish, English, and Polish. The business decision comes first; the tool comes after.",
     budgetCta: "Get a budget",
     composerPlaceholder: "Describe the problem or what you want to build…",
   },
@@ -130,7 +135,7 @@ export const en = {
     },
     servicePages: servicePagesEn,
   },
-  testimonials: {
+  criteria: {
     eyebrow: "HOW WE THINK",
     items: [
       {
@@ -322,6 +327,8 @@ export const en = {
     schedule: "Schedule a meeting",
     linkedin: "LinkedIn",
     privacy: "Privacy",
+    legalNotice: "Legal notice",
+    cookies: "Cookies",
   },
   ui: {
     skipToContent: "Skip to content",
@@ -395,7 +402,7 @@ export const en = {
     process: {
       stepsAria: "Process steps",
     },
-    testimonials: {
+    criteria: {
       aria: "How Neora Labs thinks",
     },
     team: {
@@ -528,19 +535,75 @@ export const en = {
     sections: [
       {
         heading: "Controller",
-        body: "Neora Labs. To exercise your rights, write to {email}.",
+        body: "Neora Labs, a custom software studio. To exercise your rights, write to {email}.",
       },
       {
         heading: "What we ask for",
-        body: "Name, company, email, optional phone, and the message you send in the contact form.",
+        body: "Name, company, email, optional phone, and the message you send in the contact form or the brief.",
       },
       {
         heading: "Why",
-        body: "To answer your enquiry and, if you ask, to arrange a meeting. Scheduling is handled by Cal.com and lands on our calendar.",
+        body: "To answer your enquiry and, if you ask, to arrange a meeting. Scheduling is handled by Cal.com as a processor and lands on our calendar.",
+      },
+      {
+        heading: "Cookies",
+        body: "We only store necessary language and theme preferences. Details are on the cookies page. There is no analytics or advertising.",
       },
       {
         heading: "Retention",
         body: "We keep the message as long as needed to handle it and meet legal duties. You can ask for access, correction, or deletion.",
+      },
+    ],
+    back: "Back to home",
+  },
+  legalNotice: {
+    title: "Legal notice",
+    updated: "Last updated: August 2026.",
+    intro: "Who publishes this site and the terms for using it, including the indicative brief.",
+    sections: [
+      {
+        heading: "Publisher",
+        body: "This site is published by Neora Labs. Contact: {email}.",
+      },
+      {
+        heading: "Activity",
+        body: "We design and build custom software for startups and SMEs in Europe and the United States. We operate from Colombia, Poland, and Spain.",
+      },
+      {
+        heading: "Use of the site",
+        body: "The content is informational. It is not an offer, legal advice, or a binding quote.",
+      },
+      {
+        heading: "Indicative brief",
+        body: "The brief estimates scope, timeline, and investment as guidance. It is not a binding quote. Scope is confirmed on a call.",
+      },
+      {
+        heading: "Jurisdiction",
+        body: "Any dispute is submitted to the courts of Colombia, without prejudice to consumer rights in your country of residence.",
+      },
+    ],
+    back: "Back to home",
+  },
+  cookies: {
+    title: "Cookies",
+    updated: "Last updated: August 2026.",
+    intro: "We only use what is needed for language and theme. There is no analytics or advertising.",
+    sections: [
+      {
+        heading: "What we store",
+        body: "The neora-locale cookie remembers your language. Light or dark theme is stored in the browser (localStorage), not as a tracking cookie.",
+      },
+      {
+        heading: "Why",
+        body: "So the site opens in your language and theme. These are technical preferences, not advertising profiles.",
+      },
+      {
+        heading: "Third parties",
+        body: "If you book a meeting, Cal.com may use its own cookies in the calendar iframe. We do not embed analytics or social networks.",
+      },
+      {
+        heading: "Consent",
+        body: "We do not ask consent for these necessary preferences. If we add analytics later, we will say so and ask permission.",
       },
     ],
     back: "Back to home",

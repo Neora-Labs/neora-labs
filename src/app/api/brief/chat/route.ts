@@ -7,17 +7,16 @@ import {
   runBriefChatTurn,
   sanitizePartialAnswers,
 } from "@/lib/brief-agent";
+import { guardPublicPost, publicGuardResponse } from "@/lib/request-guard";
 
 export async function POST(request: Request) {
   const fallback = getMessages(defaultLocale);
-  let payload: unknown;
-
-  try {
-    payload = await request.json();
-  } catch {
-    return Response.json({ error: fallback.brief.invalidJson }, { status: 400 });
+  const guarded = await guardPublicPost(request, "chat");
+  if (!guarded.ok) {
+    return publicGuardResponse(guarded, fallback, fallback.brief.invalidJson);
   }
 
+  const payload = guarded.payload;
   if (!isRecord(payload)) {
     return Response.json({ error: fallback.brief.invalidPayload }, { status: 400 });
   }

@@ -5,6 +5,7 @@ import { Services } from "@/components/sections/Services";
 import { Values } from "@/components/sections/Values";
 import { getMessages } from "@/i18n/get-messages";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { buildOrgJsonLd } from "@/lib/org-jsonld";
 
 export default async function Home({ params }: PageProps<"/[locale]">) {
   const { locale } = await params;
@@ -13,10 +14,14 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
 
   return (
     <main id="contenido">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: buildOrgJsonLd(messages.site) }}
+      />
       <Hero hero={messages.hero} />
       <Positioning
-        testimonials={messages.testimonials}
-        testimonialsAria={messages.ui.testimonials.aria}
+        criteria={messages.criteria}
+        criteriaAria={messages.ui.criteria.aria}
       />
       <Services />
       <Process process={messages.process} />

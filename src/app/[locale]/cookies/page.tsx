@@ -10,22 +10,22 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: PageProps<"/[locale]/privacidad">): Promise<Metadata> {
+}: PageProps<"/[locale]/cookies">): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) {
     return {};
   }
   const messages = getMessages(locale);
   return {
-    title: `${messages.privacy.title} — ${messages.site.name}`,
-    description: messages.privacy.intro,
+    title: `${messages.cookies.title} — ${messages.site.name}`,
+    description: messages.cookies.intro,
     alternates: {
-      canonical: `/${locale}/privacidad`,
-      languages: localeLanguages("/privacidad"),
+      canonical: `/${locale}/cookies`,
+      languages: localeLanguages("/cookies"),
     },
     openGraph: {
-      title: `${messages.privacy.title} — ${messages.site.name}`,
-      description: messages.privacy.intro,
+      title: `${messages.cookies.title} — ${messages.site.name}`,
+      description: messages.cookies.intro,
       locale: ogLocale[locale],
       type: "website",
       siteName: messages.site.name,
@@ -33,23 +33,22 @@ export async function generateMetadata({
   };
 }
 
-export default async function PrivacyPage({ params }: PageProps<"/[locale]/privacidad">) {
+export default async function CookiesPage({ params }: PageProps<"/[locale]/cookies">) {
   const { locale } = await params;
   if (!isLocale(locale)) {
     notFound();
   }
   const messages = getMessages(locale);
-  const { privacy, site } = messages;
+  const { cookies } = messages;
 
   return (
     <LegalArticle
-      title={privacy.title}
-      updated={privacy.updated}
-      intro={privacy.intro}
-      sections={privacy.sections}
-      vars={{ email: site.email }}
+      title={cookies.title}
+      updated={cookies.updated}
+      intro={cookies.intro}
+      sections={cookies.sections}
       backHref={localePath(locale, "#inicio")}
-      backLabel={privacy.back}
+      backLabel={cookies.back}
     />
   );
 }

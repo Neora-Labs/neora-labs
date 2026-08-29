@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ClosingCta } from "@/components/sections/ClosingCta";
-import { defaultLocale, isLocale, locales, ogLocale } from "@/i18n/config";
+import { defaultLocale, isLocale, localeLanguages, locales, ogLocale } from "@/i18n/config";
 import { getMessages } from "@/i18n/get-messages";
 
 export function generateStaticParams() {
@@ -22,12 +22,7 @@ export async function generateMetadata({
     description: messages.contact.body,
     alternates: {
       canonical: `/${locale}/contacto`,
-      languages: {
-        es: "/es/contacto",
-        en: "/en/contacto",
-        pl: "/pl/contacto",
-        "x-default": "/es/contacto",
-      },
+      languages: localeLanguages("/contacto"),
     },
     openGraph: {
       title,

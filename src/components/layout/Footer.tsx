@@ -67,6 +67,18 @@ export function Footer({ footer, navItems, site, locale }: FooterProps) {
               >
                 {footer.privacy}
               </a>
+              <a
+                href={localePath(locale, "/aviso-legal")}
+                className="text-base leading-6 text-core-white transition-colors hover:text-accent"
+              >
+                {footer.legalNotice}
+              </a>
+              <a
+                href={localePath(locale, "/cookies")}
+                className="text-base leading-6 text-core-white transition-colors hover:text-accent"
+              >
+                {footer.cookies}
+              </a>
             </div>
           </div>
         </div>

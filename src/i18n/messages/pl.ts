@@ -7,9 +7,14 @@ export const pl = {
     name: "Neora Labs",
     title: "Neora Labs — Oprogramowanie na miarę dla Europy i USA.",
     description:
-      "Projektujemy i budujemy niezawodne oprogramowanie dla startupów i MŚP w Europie i Stanach Zjednoczonych. Strategia, technologia i bliska komunikacja w jednym zespole.",
+      "Międzynarodowe studio oprogramowania na miarę. Bliska realizacja po hiszpańsku, angielsku i polsku. Zaczynamy od decyzji biznesowej, nie od narzędzia.",
     email: "info@neora-labs.com",
     url: "https://neoralabs.com",
+  },
+  api: {
+    rateLimited: "Zbyt wiele żądań. Poczekaj chwilę i spróbuj ponownie.",
+    payloadTooLarge: "Wysłane dane są zbyt duże.",
+    generic: "Nie udało się dokończyć. Spróbuj ponownie.",
   },
   navItems: [
     { href: "/servicios", label: "Usługi" },
@@ -20,7 +25,7 @@ export const pl = {
   hero: {
     badge: "OPROGRAMOWANIE NA MIARĘ",
     headline: ["Zamieniamy realne problemy", "w produkty cyfrowe,", "które idą do przodu."],
-    body: "Projektujemy i budujemy niezawodne oprogramowanie dla startupów i MŚP w Europie i Stanach Zjednoczonych. Strategia, technologia i bliska komunikacja w jednym zespole.",
+    body: "Międzynarodowe studio oprogramowania na miarę dla startupów i MŚP. Bliska realizacja po hiszpańsku, angielsku i polsku. Najpierw decyzja biznesowa, potem narzędzie.",
     budgetCta: "Poznaj widełki budżetu",
     composerPlaceholder: "Opisz problem albo to, co chcesz zbudować…",
   },
@@ -130,7 +135,7 @@ export const pl = {
     },
     servicePages: servicePagesPl,
   },
-  testimonials: {
+  criteria: {
     eyebrow: "JAK MYŚLIMY",
     items: [
       {
@@ -322,6 +327,8 @@ export const pl = {
     schedule: "Umów spotkanie",
     linkedin: "LinkedIn",
     privacy: "Prywatność",
+    legalNotice: "Nota prawna",
+    cookies: "Cookies",
   },
   ui: {
     skipToContent: "Przejdź do treści",
@@ -395,7 +402,7 @@ export const pl = {
     process: {
       stepsAria: "Kroki procesu",
     },
-    testimonials: {
+    criteria: {
       aria: "Jak myśli Neora Labs",
     },
     team: {
@@ -528,19 +535,75 @@ export const pl = {
     sections: [
       {
         heading: "Administrator",
-        body: "Neora Labs. Aby skorzystać ze swoich praw, napisz na {email}.",
+        body: "Neora Labs, studio oprogramowania na miarę. Aby skorzystać ze swoich praw, napisz na {email}.",
       },
       {
         heading: "Jakie dane prosimy",
-        body: "Imię, firma, e-mail, opcjonalny telefon oraz wiadomość z formularza kontaktowego.",
+        body: "Imię, firma, e-mail, opcjonalny telefon oraz wiadomość z formularza kontaktowego lub briefu.",
       },
       {
         heading: "Po co",
-        body: "Żeby odpowiedzieć na zapytanie i, jeśli o to prosisz, umówić spotkanie. Rezerwację obsługuje Cal.com i trafia ona do naszego kalendarza.",
+        body: "Żeby odpowiedzieć na zapytanie i, jeśli o to prosisz, umówić spotkanie. Rezerwację obsługuje Cal.com jako podmiot przetwarzający i trafia ona do naszego kalendarza.",
+      },
+      {
+        heading: "Cookies",
+        body: "Zapisujemy tylko niezbędne preferencje języka i motywu. Szczegóły są na stronie cookies. Nie ma analityki ani reklamy.",
       },
       {
         heading: "Przechowywanie",
         body: "Przechowujemy wiadomość tak długo, jak to potrzebne do jej obsługi i obowiązków prawnych. Możesz poprosić o dostęp, sprostowanie lub usunięcie.",
+      },
+    ],
+    back: "Wróć na stronę główną",
+  },
+  legalNotice: {
+    title: "Nota prawna",
+    updated: "Ostatnia aktualizacja: sierpień 2026.",
+    intro: "Kto publikuje tę stronę i na jakich zasadach się z niej korzysta, w tym z orientacyjnego briefu.",
+    sections: [
+      {
+        heading: "Wydawca",
+        body: "Tę stronę publikuje Neora Labs. Kontakt: {email}.",
+      },
+      {
+        heading: "Działalność",
+        body: "Projektujemy i budujemy oprogramowanie na miarę dla startupów i MŚP w Europie i Stanach Zjednoczonych. Działamy z Kolumbii, Polski i Hiszpanii.",
+      },
+      {
+        heading: "Korzystanie ze strony",
+        body: "Treści mają charakter informacyjny. Nie stanowią oferty, porady prawnej ani wiążącej wyceny.",
+      },
+      {
+        heading: "Brief orientacyjny",
+        body: "Brief szacuje zakres, termin i inwestycję orientacyjnie. Nie jest wiążącą wyceną. Zakres potwierdzamy na rozmowie.",
+      },
+      {
+        heading: "Jurysdykcja",
+        body: "Spory podlegają sądom Kolumbii, bez uszczerbku dla praw konsumenta w kraju zamieszkania.",
+      },
+    ],
+    back: "Wróć na stronę główną",
+  },
+  cookies: {
+    title: "Cookies",
+    updated: "Ostatnia aktualizacja: sierpień 2026.",
+    intro: "Używamy tylko tego, co potrzebne do języka i motywu. Nie ma analityki ani reklamy.",
+    sections: [
+      {
+        heading: "Co zapisujemy",
+        body: "Ciasteczko neora-locale zapamiętuje język. Jasny lub ciemny motyw jest w przeglądarce (localStorage), nie jako ciasteczko śledzące.",
+      },
+      {
+        heading: "Po co",
+        body: "Żeby strona otwierała się w Twoim języku i motywie. To preferencje techniczne, nie profile reklamowe.",
+      },
+      {
+        heading: "Podmioty trzecie",
+        body: "Jeśli umawiasz spotkanie, Cal.com może używać własnych ciasteczek w ramce kalendarza. Nie osadzamy analityki ani sieci społecznościowych.",
+      },
+      {
+        heading: "Zgoda",
+        body: "Nie prosimy o zgodę na te niezbędne preferencje. Jeśli dodamy analitykę, poinformujemy i poprosimy o zgodę.",
       },
     ],
     back: "Wróć na stronę główną",

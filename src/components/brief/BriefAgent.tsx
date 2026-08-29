@@ -335,7 +335,9 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
         completed: completedCount(answers, briefSteps),
         total: briefSteps.length,
       });
-  const showComposer = !isComplete && (mode === "chat" || Boolean(textStep));
+  const showChips = Boolean(choiceStep) && !isComplete && !showEmpty;
+  const showTextComposer = !isComplete && (mode === "chat" || Boolean(textStep));
+  const showDock = showChips || showTextComposer;
   const composerLocked = busy || (mode === "fsm" && !showTurn);
 
   return (
@@ -460,7 +462,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
 
       <div className="shrink-0 bg-bg-default px-4 pb-5 pt-1 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
-          {showComposer ? (
+          {showDock ? (
             <form
               className="rounded-[22px] border border-border-default bg-surface-raised p-3 shadow-sm"
               onSubmit={(event) => {
@@ -468,8 +470,12 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
                 submitComposer();
               }}
             >
-              {choiceStep && !isComplete && !showEmpty ? (
-                <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={choiceStep.prompt}>
+              {showChips && choiceStep ? (
+                <div
+                  className={cn("flex flex-wrap gap-2", showTextComposer && "mb-3")}
+                  role="group"
+                  aria-label={choiceStep.prompt}
+                >
                   {choiceStep.options.map((option) => (
                     <button
                       key={option.id}
@@ -490,64 +496,68 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
                 </div>
               ) : null}
 
-              <div className="flex items-end gap-2">
-                {textStep?.inputMode === "email" ? (
-                  <input
-                    id={`${formId}-email`}
-                    type="email"
-                    autoComplete="email"
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      setError(null);
-                    }}
-                    placeholder={textStep.placeholder}
-                    className={cn(composerClassName, "min-w-0 flex-1 py-2")}
-                    disabled={composerLocked}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        submitComposer();
-                      }
-                    }}
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={error ? `${formId}-error` : undefined}
-                  />
-                ) : (
-                  <textarea
-                    id={`${formId}-composer`}
-                    rows={2}
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      setError(null);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        submitComposer();
-                      }
-                    }}
-                    placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
-                    className={cn(composerClassName, "min-w-0 flex-1")}
-                    disabled={composerLocked}
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={error ? `${formId}-error` : undefined}
-                  />
-                )}
-                <button
-                  type="submit"
-                  disabled={composerLocked}
-                  className={sendButtonClassName}
-                  aria-label={messages.brief.sendAria}
-                >
-                  <SendIcon />
-                </button>
-              </div>
-              {error ? (
-                <p id={`${formId}-error`} className="px-1 pt-2 text-sm text-text-brand">
-                  {error}
-                </p>
+              {showTextComposer ? (
+                <>
+                  <div className="flex items-end gap-2">
+                    {textStep?.inputMode === "email" ? (
+                      <input
+                        id={`${formId}-email`}
+                        type="email"
+                        autoComplete="email"
+                        value={draft}
+                        onChange={(event) => {
+                          setDraft(event.target.value);
+                          setError(null);
+                        }}
+                        placeholder={textStep.placeholder}
+                        className={cn(composerClassName, "min-w-0 flex-1 py-2")}
+                        disabled={composerLocked}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            submitComposer();
+                          }
+                        }}
+                        aria-invalid={Boolean(error)}
+                        aria-describedby={error ? `${formId}-error` : undefined}
+                      />
+                    ) : (
+                      <textarea
+                        id={`${formId}-composer`}
+                        rows={2}
+                        value={draft}
+                        onChange={(event) => {
+                          setDraft(event.target.value);
+                          setError(null);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            submitComposer();
+                          }
+                        }}
+                        placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
+                        className={cn(composerClassName, "min-w-0 flex-1")}
+                        disabled={composerLocked}
+                        aria-invalid={Boolean(error)}
+                        aria-describedby={error ? `${formId}-error` : undefined}
+                      />
+                    )}
+                    <button
+                      type="submit"
+                      disabled={composerLocked}
+                      className={sendButtonClassName}
+                      aria-label={messages.brief.sendAria}
+                    >
+                      <SendIcon />
+                    </button>
+                  </div>
+                  {error ? (
+                    <p id={`${formId}-error`} className="px-1 pt-2 text-sm text-text-brand">
+                      {error}
+                    </p>
+                  ) : null}
+                </>
               ) : null}
             </form>
           ) : null}

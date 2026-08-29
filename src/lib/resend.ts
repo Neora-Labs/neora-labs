@@ -16,21 +16,25 @@ export async function sendSiteEmail(options: SendSiteEmailOptions): Promise<bool
 
   const from = process.env.BRIEF_FROM_EMAIL ?? `Neora Labs <${options.fromFallbackEmail}>`;
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [options.to],
-      reply_to: options.replyTo,
-      subject: options.subject,
-      text: options.text,
-      html: wrapTransactionalEmailHtml(options.text),
-    }),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [options.to],
+        reply_to: options.replyTo,
+        subject: options.subject,
+        text: options.text,
+        html: wrapTransactionalEmailHtml(options.text),
+      }),
+    });
 
-  return response.ok;
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

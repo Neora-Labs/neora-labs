@@ -6,9 +6,14 @@ export const es = {
     name: "Neora Labs",
     title: "Neora Labs — Software a medida para Europa y EE. UU.",
     description:
-      "Diseñamos y construimos software confiable para startups y pymes de Europa y Estados Unidos. Estrategia, tecnología y comunicación cercana en un mismo equipo.",
+      "Estudio internacional de software a medida. Ejecución cercana en español, inglés y polaco. Empezamos por la decisión de negocio, no por la herramienta.",
     email: "info@neora-labs.com",
     url: "https://neoralabs.com",
+  },
+  api: {
+    rateLimited: "Demasiadas solicitudes. Espera un momento e inténtalo de nuevo.",
+    payloadTooLarge: "El envío es demasiado grande.",
+    generic: "No se pudo completar. Inténtalo de nuevo.",
   },
   navItems: [
     { href: "/servicios", label: "Servicios" },
@@ -19,7 +24,7 @@ export const es = {
   hero: {
     badge: "SOFTWARE A MEDIDA",
     headline: ["Convertimos problemas reales", "en productos digitales", "que avanzan."],
-    body: "Diseñamos y construimos software confiable para startups y pymes de Europa y Estados Unidos. Estrategia, tecnología y comunicación cercana en un mismo equipo.",
+    body: "Estudio internacional de software a medida para startups y pymes. Ejecución cercana en español, inglés y polaco. Primero la decisión de negocio; después, la herramienta.",
     budgetCta: "Conoce un presupuesto",
     composerPlaceholder: "Describe el problema o lo que quieres construir…",
   },
@@ -129,7 +134,7 @@ export const es = {
     },
     servicePages: servicePagesEs,
   },
-  testimonials: {
+  criteria: {
     eyebrow: "CRITERIO",
     items: [
       {
@@ -321,6 +326,8 @@ export const es = {
     schedule: "Agendar reunión",
     linkedin: "LinkedIn",
     privacy: "Privacidad",
+    legalNotice: "Aviso legal",
+    cookies: "Cookies",
   },
   ui: {
     skipToContent: "Saltar al contenido",
@@ -394,7 +401,7 @@ export const es = {
     process: {
       stepsAria: "Pasos del proceso",
     },
-    testimonials: {
+    criteria: {
       aria: "Criterio de Neora Labs",
     },
     team: {
@@ -527,19 +534,76 @@ export const es = {
     sections: [
       {
         heading: "Quién es el responsable",
-        body: "Neora Labs. Para ejercer tus derechos, escribe a {email}.",
+        body: "Neora Labs, estudio de software a medida. Para ejercer tus derechos, escribe a {email}.",
       },
       {
         heading: "Qué datos pedimos",
-        body: "Nombre, empresa, correo, teléfono opcional y el mensaje que nos envías en el formulario de contacto.",
+        body: "Nombre, empresa, correo, teléfono opcional y el mensaje que nos envías en el formulario de contacto o en el brief.",
       },
       {
         heading: "Para qué",
-        body: "Responder a tu consulta y, si lo pides, coordinar una reunión. La reserva de agenda la gestiona Cal.com y queda en nuestro calendario.",
+        body: "Responder a tu consulta y, si lo pides, coordinar una reunión. La reserva de agenda la gestiona Cal.com como encargado y queda en nuestro calendario.",
+      },
+      {
+        heading: "Cookies",
+        body: "Solo usamos preferencias necesarias de idioma y tema. El detalle está en la página de cookies. No hay analítica ni publicidad.",
       },
       {
         heading: "Conservación",
         body: "Guardamos el mensaje el tiempo necesario para atenderlo y cumplir obligaciones legales. Puedes pedir acceso, rectificación o supresión.",
+      },
+    ],
+    back: "Volver al inicio",
+  },
+  legalNotice: {
+    title: "Aviso legal",
+    updated: "Última actualización: agosto de 2026.",
+    intro:
+      "Quién publica este sitio y bajo qué condiciones se usa, incluido el brief orientativo.",
+    sections: [
+      {
+        heading: "Titular",
+        body: "Este sitio lo publica Neora Labs. Para contactar: {email}.",
+      },
+      {
+        heading: "Actividad",
+        body: "Diseñamos y construimos software a medida para startups y pymes de Europa y Estados Unidos. Operamos desde Colombia, Polonia y España.",
+      },
+      {
+        heading: "Uso del sitio",
+        body: "Los contenidos son informativos. No constituyen oferta, asesoramiento jurídico ni un presupuesto cerrado.",
+      },
+      {
+        heading: "Brief orientativo",
+        body: "El brief estima alcance, plazo e inversión de forma orientativa. No es un presupuesto vinculante. El alcance se confirma en una llamada.",
+      },
+      {
+        heading: "Jurisdicción",
+        body: "Cualquier controversia se somete a los jueces y tribunales de Colombia, sin perjuicio de los derechos que asistan a consumidores en su país de residencia.",
+      },
+    ],
+    back: "Volver al inicio",
+  },
+  cookies: {
+    title: "Cookies",
+    updated: "Última actualización: agosto de 2026.",
+    intro: "Usamos solo lo necesario para idioma y tema. No hay analítica ni publicidad.",
+    sections: [
+      {
+        heading: "Qué guardamos",
+        body: "La cookie neora-locale recuerda el idioma. El tema claro u oscuro se guarda en el navegador (localStorage), no como cookie de seguimiento.",
+      },
+      {
+        heading: "Para qué",
+        body: "Para que el sitio se abra en tu idioma y con el tema que elegiste. Son preferencias técnicas, no perfiles publicitarios.",
+      },
+      {
+        heading: "Terceros",
+        body: "Si reservas una reunión, Cal.com puede usar sus propias cookies en el iframe de la agenda. No incrustamos analítica ni redes sociales.",
+      },
+      {
+        heading: "Consentimiento",
+        body: "No pedimos consentimiento para estas preferencias necesarias. Si en el futuro añadimos analítica, lo avisaremos y pediremos permiso.",
       },
     ],
     back: "Volver al inicio",
