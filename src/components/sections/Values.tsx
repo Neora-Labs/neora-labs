@@ -1,8 +1,12 @@
 import { PresenceAndTeam } from "@/components/international/PresenceAndTeam";
 import { Reveal } from "@/components/ui/Reveal";
-import { international } from "@/lib/content";
+import type { Messages } from "@/i18n/messages/es";
 
-export function Values() {
+type ValuesProps = {
+  international: Messages["international"];
+};
+
+export function Values({ international }: ValuesProps) {
   return (
     <section
       id="nosotros"

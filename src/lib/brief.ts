@@ -6,7 +6,10 @@ import {
   type ScaleId,
   type StageId,
 } from "@/lib/brief-matrix";
-import { site } from "@/lib/content";
+import type { Locale } from "@/i18n/config";
+import { bcp47 } from "@/i18n/config";
+import { interpolate } from "@/i18n/interpolate";
+import type { Messages } from "@/i18n/messages/es";
 
 export type { IntegrationsId, NeedId, ScaleId, StageId };
 
@@ -47,125 +50,139 @@ export type BriefReport = {
   answers: BriefAnswers;
   band: InvestmentBand;
   rangeLabel: string;
+  timeLabel: string;
   nextStep: string;
   summaryLines: Array<{ label: string; value: string }>;
   body: string;
+  visitorBody: string;
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PROBLEM_MIN = 10;
 const PROBLEM_MAX = 2000;
 
-export const briefIntro =
-  "Seis preguntas. Te devolvemos un informe y una banda de inversión — orientativa, se confirma en una llamada.";
-
 export type AgentTurn =
   | { kind: "step"; step: BriefStep }
   | { kind: "report"; report: BriefReport };
 
-export function nextIncompleteIndex(answers: Partial<BriefAnswers>): number | null {
-  const index = briefSteps.findIndex((step) => {
+export function getBriefSteps(messages: Messages): readonly BriefStep[] {
+  const { steps } = messages.brief;
+  return [
+    {
+      id: "need",
+      kind: "choice",
+      prompt: steps.need.prompt,
+      options: [
+        { id: "ai", label: steps.need.options.ai },
+        { id: "automation", label: steps.need.options.automation },
+        { id: "software", label: steps.need.options.software },
+        { id: "web", label: steps.need.options.web },
+        { id: "integrations", label: steps.need.options.integrations },
+        { id: "unclear", label: steps.need.options.unclear },
+      ],
+    },
+    {
+      id: "stage",
+      kind: "choice",
+      prompt: steps.stage.prompt,
+      options: [
+        { id: "idea", label: steps.stage.options.idea },
+        { id: "operating", label: steps.stage.options.operating },
+        { id: "product", label: steps.stage.options.product },
+      ],
+    },
+    {
+      id: "scale",
+      kind: "choice",
+      prompt: steps.scale.prompt,
+      options: [
+        { id: "small", label: steps.scale.options.small },
+        { id: "medium", label: steps.scale.options.medium },
+        { id: "large", label: steps.scale.options.large },
+      ],
+    },
+    {
+      id: "problem",
+      kind: "text",
+      prompt: steps.problem.prompt,
+      placeholder: steps.problem.placeholder,
+      inputMode: "text",
+    },
+    {
+      id: "integrations",
+      kind: "choice",
+      prompt: steps.integrations.prompt,
+      options: [
+        { id: "none", label: steps.integrations.options.none },
+        { id: "one", label: steps.integrations.options.one },
+        { id: "several", label: steps.integrations.options.several },
+      ],
+    },
+    {
+      id: "email",
+      kind: "text",
+      prompt: steps.email.prompt,
+      placeholder: steps.email.placeholder,
+      inputMode: "email",
+    },
+  ];
+}
+
+export function nextIncompleteIndex(
+  answers: Partial<BriefAnswers>,
+  steps: readonly BriefStep[],
+): number | null {
+  const index = steps.findIndex((step) => {
     const value = answers[step.id];
     return value === undefined || value === "";
   });
   return index === -1 ? null : index;
 }
 
-export function completedCount(answers: Partial<BriefAnswers>): number {
-  return briefSteps.filter((step) => {
+export function completedCount(answers: Partial<BriefAnswers>, steps: readonly BriefStep[]): number {
+  return steps.filter((step) => {
     const value = answers[step.id];
     return value !== undefined && value !== "";
   }).length;
 }
 
-export function getNextAgentTurn(answers: Partial<BriefAnswers>): AgentTurn {
-  const index = nextIncompleteIndex(answers);
+export function getNextAgentTurn(
+  answers: Partial<BriefAnswers>,
+  messages: Messages,
+  locale: Locale,
+): AgentTurn {
+  const steps = getBriefSteps(messages);
+  const index = nextIncompleteIndex(answers, steps);
   if (index === null) {
-    return { kind: "report", report: buildBriefReport(answers as BriefAnswers) };
+    return { kind: "report", report: buildBriefReport(answers as BriefAnswers, messages, locale) };
   }
 
-  const step = briefSteps[index];
+  const step = steps[index];
   if (!step) {
-    return { kind: "report", report: buildBriefReport(answers as BriefAnswers) };
+    return { kind: "report", report: buildBriefReport(answers as BriefAnswers, messages, locale) };
   }
 
   return { kind: "step", step };
 }
 
-export const briefSteps: readonly BriefStep[] = [
-  {
-    id: "need",
-    kind: "choice",
-    prompt: "¿Qué necesitas construir ahora mismo?",
-    options: [
-      { id: "ai", label: "Inteligencia Artificial para empresas" },
-      { id: "automation", label: "Automatización y digitalización" },
-      { id: "software", label: "Desarrollo de software" },
-      { id: "web", label: "Web y presencia digital" },
-      { id: "integrations", label: "Integraciones y sistemas" },
-      { id: "unclear", label: "Aún no está claro" },
-    ],
-  },
-  {
-    id: "stage",
-    kind: "choice",
-    prompt: "¿En qué punto está el negocio?",
-    options: [
-      { id: "idea", label: "Es una idea" },
-      { id: "operating", label: "Ya operamos" },
-      { id: "product", label: "Hay un producto en marcha" },
-    ],
-  },
-  {
-    id: "scale",
-    kind: "choice",
-    prompt: "¿Quién lo usará?",
-    options: [
-      { id: "small", label: "1–10 personas" },
-      { id: "medium", label: "10–50 personas" },
-      { id: "large", label: "Más de 50 personas" },
-    ],
-  },
-  {
-    id: "problem",
-    kind: "text",
-    prompt: "Describe el problema en una o dos frases.",
-    placeholder: "Qué duele hoy, a quién afecta y qué cambiaría si se resolviera.",
-    inputMode: "text",
-  },
-  {
-    id: "integrations",
-    kind: "choice",
-    prompt: "¿Hay sistemas que conectar?",
-    options: [
-      { id: "none", label: "Ninguno" },
-      { id: "one", label: "Uno (CRM, ERP…)" },
-      { id: "several", label: "Varios sistemas" },
-    ],
-  },
-  {
-    id: "email",
-    kind: "text",
-    prompt: "¿A qué correo te enviamos el informe?",
-    placeholder: "nina.v@example.com",
-    inputMode: "email",
-  },
-];
-
-export function formatStepAnswer(step: BriefStep, value: string): string {
+export function formatStepAnswer(
+  step: BriefStep,
+  value: string,
+  steps: readonly BriefStep[],
+): string {
   if (step.kind === "text") {
     return value;
   }
 
   switch (step.id) {
     case "need":
-      return labelForAnswer("need", value as NeedId);
+      return labelForAnswer("need", value as NeedId, steps);
     case "stage":
-      return labelForAnswer("stage", value as StageId);
+      return labelForAnswer("stage", value as StageId, steps);
     case "scale":
-      return labelForAnswer("scale", value as ScaleId);
+      return labelForAnswer("scale", value as ScaleId, steps);
     case "integrations":
-      return labelForAnswer("integrations", value as IntegrationsId);
+      return labelForAnswer("integrations", value as IntegrationsId, steps);
     default: {
       const _exhaustive: never = step;
       return _exhaustive;
@@ -176,8 +193,9 @@ export function formatStepAnswer(step: BriefStep, value: string): string {
 export function labelForAnswer<K extends Exclude<BriefStepId, "problem" | "email">>(
   stepId: K,
   value: BriefAnswers[K],
+  steps: readonly BriefStep[],
 ): string {
-  const step = briefSteps.find((item) => item.id === stepId);
+  const step = steps.find((item) => item.id === stepId);
   if (!step || step.kind !== "choice") {
     return String(value);
   }
@@ -186,51 +204,82 @@ export function labelForAnswer<K extends Exclude<BriefStepId, "problem" | "email
   return match?.label ?? String(value);
 }
 
-export function formatEuroBand(min: number, max: number): string {
-  return `${formatThousands(min)}–${formatThousands(max)} k€`;
+export function formatEuroBand(min: number, max: number, locale: Locale): string {
+  return `${formatThousands(min, locale)}–${formatThousands(max, locale)} k€`;
 }
 
-export function buildBriefReport(answers: BriefAnswers): BriefReport {
-  const band = lookupInvestmentBand(answers.need, answers.integrations, answers.scale);
+export function formatWeeksBand(min: number, max: number, messages: Messages): string {
+  return interpolate(messages.brief.weeksBand, {
+    min: String(min),
+    max: String(max),
+  });
+}
+
+export function buildBriefReport(
+  answers: BriefAnswers,
+  messages: Messages,
+  locale: Locale,
+): BriefReport {
+  const steps = getBriefSteps(messages);
+  const band = lookupInvestmentBand(
+    answers.need,
+    answers.integrations,
+    answers.scale,
+    answers.stage,
+  );
+  const range = formatEuroBand(band.min, band.max, locale);
   const rangeLabel =
     band.kind === "definition"
-      ? `Sesión de definición · ${formatEuroBand(band.min, band.max)}`
-      : formatEuroBand(band.min, band.max);
+      ? interpolate(messages.brief.definitionBand, { range })
+      : range;
+  const timeLabel = formatWeeksBand(band.weeksMin, band.weeksMax, messages);
   const nextStep =
-    band.kind === "definition"
-      ? "Una sesión de definición para aterrizar el alcance antes de construir."
-      : "Una llamada para confirmar alcance, plazos y la banda de inversión.";
+    band.kind === "definition" ? messages.brief.nextStepDefinition : messages.brief.nextStepCall;
 
   const summaryLines = [
-    { label: "Problema", value: answers.problem.trim() },
-    { label: "Tipo", value: labelForAnswer("need", answers.need) },
-    { label: "Momento", value: labelForAnswer("stage", answers.stage) },
-    { label: "Quién lo usa", value: labelForAnswer("scale", answers.scale) },
-    { label: "Integraciones", value: labelForAnswer("integrations", answers.integrations) },
+    { label: messages.brief.summary.problem, value: answers.problem.trim() },
+    { label: messages.brief.summary.type, value: labelForAnswer("need", answers.need, steps) },
+    { label: messages.brief.summary.moment, value: labelForAnswer("stage", answers.stage, steps) },
+    {
+      label: messages.brief.summary.whoUses,
+      value: labelForAnswer("scale", answers.scale, steps),
+    },
+    {
+      label: messages.brief.summary.integrations,
+      value: labelForAnswer("integrations", answers.integrations, steps),
+    },
   ];
 
   const body = [
-    "Brief de proyecto — Neora Labs",
+    messages.brief.reportTitle,
     "",
     ...summaryLines.map((line) => `${line.label}: ${line.value}`),
-    `Siguiente paso: ${nextStep}`,
-    `Inversión orientativa: ${rangeLabel} · se confirma en una llamada`,
+    `${messages.brief.nextStepLabel}: ${nextStep}`,
+    interpolate(messages.brief.investmentLine, { range: rangeLabel }),
+    interpolate(messages.brief.timeLine, { weeks: timeLabel }),
     "",
-    `Contacto del visitante: ${answers.email}`,
+    `${messages.brief.visitorContact}: ${answers.email}`,
   ].join("\n");
 
-  return { answers, band, rangeLabel, nextStep, summaryLines, body };
+  const visitorBody = [messages.brief.visitorEmailIntro, "", body].join("\n");
+
+  return { answers, band, rangeLabel, timeLabel, nextStep, summaryLines, body, visitorBody };
 }
 
-export function buildMailtoHref(report: BriefReport): string {
-  const subject = encodeURIComponent(`Brief Neora Labs — ${report.answers.email}`);
+export function buildMailtoHref(report: BriefReport, messages: Messages): string {
+  const subject = encodeURIComponent(
+    interpolate(messages.brief.mailtoSubject, { email: report.answers.email }),
+  );
   const body = encodeURIComponent(report.body);
-  return `mailto:${site.email}?subject=${subject}&body=${body}`;
+  return `mailto:${messages.site.email}?subject=${subject}&body=${body}`;
 }
 
-export function parseBriefAnswers(input: unknown): { ok: true; answers: BriefAnswers } | { ok: false; error: string } {
+export function parseBriefAnswers(
+  input: unknown,
+  messages: Messages,
+): { ok: true; answers: BriefAnswers } | { ok: false; error: string } {
   if (!isRecord(input)) {
-    return { ok: false, error: "Payload inválido." };
+    return { ok: false, error: messages.brief.invalidPayload };
   }
 
   const need = parseNeed(input.need);
@@ -241,15 +290,15 @@ export function parseBriefAnswers(input: unknown): { ok: true; answers: BriefAns
   const email = typeof input.email === "string" ? input.email.trim() : "";
 
   if (!need || !stage || !scale || !integrations) {
-    return { ok: false, error: "Faltan respuestas del brief." };
+    return { ok: false, error: messages.brief.missingAnswers };
   }
 
   if (problem.length < PROBLEM_MIN || problem.length > PROBLEM_MAX) {
-    return { ok: false, error: "Describe el problema en 10 a 2000 caracteres." };
+    return { ok: false, error: messages.brief.problemLength };
   }
 
   if (!EMAIL_PATTERN.test(email)) {
-    return { ok: false, error: "El correo no es válido." };
+    return { ok: false, error: messages.brief.invalidEmail };
   }
 
   return {
@@ -258,35 +307,39 @@ export function parseBriefAnswers(input: unknown): { ok: true; answers: BriefAns
   };
 }
 
-export function validateTextStep(stepId: "problem" | "email", value: string): string | null {
+export function validateTextStep(
+  stepId: "problem" | "email",
+  value: string,
+  messages: Messages,
+): string | null {
   const trimmed = value.trim();
 
   if (stepId === "problem") {
     if (trimmed.length < PROBLEM_MIN) {
-      return "Un poco más de contexto nos ayuda a acotar el rango.";
+      return messages.brief.problemTooShort;
     }
     if (trimmed.length > PROBLEM_MAX) {
-      return "Resúmelo en dos frases.";
+      return messages.brief.problemTooLong;
     }
     return null;
   }
 
   if (!EMAIL_PATTERN.test(trimmed)) {
-    return "Introduce un correo válido.";
+    return messages.brief.emailInvalid;
   }
 
   return null;
 }
 
-function formatThousands(amount: number): string {
-  return (amount / 1000).toLocaleString("es-ES", { maximumFractionDigits: 1 });
+function formatThousands(amount: number, locale: Locale): string {
+  return (amount / 1000).toLocaleString(bcp47[locale], { maximumFractionDigits: 1 });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function parseNeed(value: unknown): NeedId | null {
+export function parseNeed(value: unknown): NeedId | null {
   switch (value) {
     case "ai":
     case "automation":
@@ -300,7 +353,7 @@ function parseNeed(value: unknown): NeedId | null {
   }
 }
 
-function parseStage(value: unknown): StageId | null {
+export function parseStage(value: unknown): StageId | null {
   switch (value) {
     case "idea":
     case "operating":
@@ -311,7 +364,7 @@ function parseStage(value: unknown): StageId | null {
   }
 }
 
-function parseScale(value: unknown): ScaleId | null {
+export function parseScale(value: unknown): ScaleId | null {
   switch (value) {
     case "small":
     case "medium":
@@ -322,7 +375,7 @@ function parseScale(value: unknown): ScaleId | null {
   }
 }
 
-function parseIntegrations(value: unknown): IntegrationsId | null {
+export function parseIntegrations(value: unknown): IntegrationsId | null {
   switch (value) {
     case "none":
     case "one":

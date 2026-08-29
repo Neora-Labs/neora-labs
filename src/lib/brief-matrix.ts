@@ -12,117 +12,157 @@ export type IntegrationsId = "none" | "one" | "several";
 export type InvestmentBand = {
   min: number;
   max: number;
+  weeksMin: number;
+  weeksMax: number;
   kind: "project" | "definition";
 };
 
 type ProjectNeed = Exclude<NeedId, "unclear">;
 
-const PROJECT_RANGES: Record<
-  ProjectNeed,
-  Record<IntegrationsId, Record<ScaleId, { min: number; max: number }>>
-> = {
+type EffortWeeks = {
+  weeksMin: number;
+  weeksMax: number;
+};
+
+const WEEKLY_RATE_EUR: Record<NeedId, number> = {
+  web: 3_500,
+  automation: 4_000,
+  software: 4_500,
+  integrations: 4_500,
+  ai: 5_000,
+  unclear: 3_500,
+};
+
+const MARGIN: Record<NeedId, number> = {
+  web: 0.22,
+  automation: 0.28,
+  software: 0.32,
+  integrations: 0.36,
+  ai: 0.38,
+  unclear: 0.2,
+};
+
+const STAGE_UNCERTAINTY: Record<StageId, number> = {
+  operating: 0,
+  product: 0.08,
+  idea: 0.18,
+};
+
+const DEFINITION_WEEKS: EffortWeeks = {
+  weeksMin: 1,
+  weeksMax: 2,
+};
+
+const PROJECT_WEEKS: Record<ProjectNeed, Record<IntegrationsId, Record<ScaleId, EffortWeeks>>> = {
   web: {
     none: {
-      small: { min: 4_000, max: 10_000 },
-      medium: { min: 6_000, max: 14_000 },
-      large: { min: 8_000, max: 18_000 },
+      small: { weeksMin: 2, weeksMax: 4 },
+      medium: { weeksMin: 3, weeksMax: 6 },
+      large: { weeksMin: 5, weeksMax: 8 },
     },
     one: {
-      small: { min: 7_000, max: 16_000 },
-      medium: { min: 10_000, max: 22_000 },
-      large: { min: 14_000, max: 28_000 },
+      small: { weeksMin: 3, weeksMax: 6 },
+      medium: { weeksMin: 5, weeksMax: 8 },
+      large: { weeksMin: 7, weeksMax: 11 },
     },
     several: {
-      small: { min: 12_000, max: 26_000 },
-      medium: { min: 16_000, max: 34_000 },
-      large: { min: 22_000, max: 42_000 },
+      small: { weeksMin: 5, weeksMax: 9 },
+      medium: { weeksMin: 7, weeksMax: 12 },
+      large: { weeksMin: 10, weeksMax: 16 },
     },
   },
   automation: {
     none: {
-      small: { min: 6_000, max: 16_000 },
-      medium: { min: 10_000, max: 22_000 },
-      large: { min: 14_000, max: 28_000 },
+      small: { weeksMin: 3, weeksMax: 6 },
+      medium: { weeksMin: 5, weeksMax: 8 },
+      large: { weeksMin: 7, weeksMax: 11 },
     },
     one: {
-      small: { min: 10_000, max: 24_000 },
-      medium: { min: 16_000, max: 32_000 },
-      large: { min: 22_000, max: 40_000 },
+      small: { weeksMin: 5, weeksMax: 8 },
+      medium: { weeksMin: 7, weeksMax: 12 },
+      large: { weeksMin: 10, weeksMax: 15 },
     },
     several: {
-      small: { min: 18_000, max: 36_000 },
-      medium: { min: 24_000, max: 48_000 },
-      large: { min: 32_000, max: 62_000 },
+      small: { weeksMin: 8, weeksMax: 13 },
+      medium: { weeksMin: 11, weeksMax: 18 },
+      large: { weeksMin: 14, weeksMax: 22 },
     },
   },
   software: {
     none: {
-      small: { min: 10_000, max: 22_000 },
-      medium: { min: 16_000, max: 32_000 },
-      large: { min: 22_000, max: 42_000 },
+      small: { weeksMin: 4, weeksMax: 8 },
+      medium: { weeksMin: 6, weeksMax: 12 },
+      large: { weeksMin: 10, weeksMax: 16 },
     },
     one: {
-      small: { min: 16_000, max: 34_000 },
-      medium: { min: 22_000, max: 45_000 },
-      large: { min: 30_000, max: 58_000 },
+      small: { weeksMin: 6, weeksMax: 12 },
+      medium: { weeksMin: 10, weeksMax: 16 },
+      large: { weeksMin: 14, weeksMax: 22 },
     },
     several: {
-      small: { min: 28_000, max: 55_000 },
-      medium: { min: 36_000, max: 70_000 },
-      large: { min: 45_000, max: 90_000 },
+      small: { weeksMin: 12, weeksMax: 20 },
+      medium: { weeksMin: 16, weeksMax: 26 },
+      large: { weeksMin: 22, weeksMax: 34 },
     },
   },
   ai: {
     none: {
-      small: { min: 10_000, max: 22_000 },
-      medium: { min: 14_000, max: 28_000 },
-      large: { min: 18_000, max: 36_000 },
+      small: { weeksMin: 4, weeksMax: 8 },
+      medium: { weeksMin: 6, weeksMax: 10 },
+      large: { weeksMin: 8, weeksMax: 14 },
     },
     one: {
-      small: { min: 14_000, max: 32_000 },
-      medium: { min: 20_000, max: 40_000 },
-      large: { min: 26_000, max: 50_000 },
+      small: { weeksMin: 6, weeksMax: 11 },
+      medium: { weeksMin: 8, weeksMax: 14 },
+      large: { weeksMin: 12, weeksMax: 18 },
     },
     several: {
-      small: { min: 22_000, max: 45_000 },
-      medium: { min: 30_000, max: 60_000 },
-      large: { min: 40_000, max: 80_000 },
+      small: { weeksMin: 10, weeksMax: 16 },
+      medium: { weeksMin: 14, weeksMax: 22 },
+      large: { weeksMin: 18, weeksMax: 28 },
     },
   },
   integrations: {
     none: {
-      small: { min: 8_000, max: 18_000 },
-      medium: { min: 12_000, max: 24_000 },
-      large: { min: 16_000, max: 32_000 },
+      small: { weeksMin: 3, weeksMax: 6 },
+      medium: { weeksMin: 5, weeksMax: 9 },
+      large: { weeksMin: 7, weeksMax: 12 },
     },
     one: {
-      small: { min: 12_000, max: 28_000 },
-      medium: { min: 18_000, max: 36_000 },
-      large: { min: 24_000, max: 48_000 },
+      small: { weeksMin: 5, weeksMax: 9 },
+      medium: { weeksMin: 7, weeksMax: 12 },
+      large: { weeksMin: 10, weeksMax: 16 },
     },
     several: {
-      small: { min: 20_000, max: 42_000 },
-      medium: { min: 28_000, max: 55_000 },
-      large: { min: 36_000, max: 72_000 },
+      small: { weeksMin: 8, weeksMax: 14 },
+      medium: { weeksMin: 12, weeksMax: 20 },
+      large: { weeksMin: 16, weeksMax: 26 },
     },
   },
-};
-
-const DEFINITION_RANGE: InvestmentBand = {
-  min: 2_500,
-  max: 6_000,
-  kind: "definition",
 };
 
 export function lookupInvestmentBand(
   need: NeedId,
   integrations: IntegrationsId,
   scale: ScaleId,
+  stage: StageId,
 ): InvestmentBand {
-  if (need === "unclear") {
-    return DEFINITION_RANGE;
-  }
+  const effort = need === "unclear" ? DEFINITION_WEEKS : PROJECT_WEEKS[need][integrations][scale];
+  const multiplier = 1 + MARGIN[need] + STAGE_UNCERTAINTY[stage];
+  const rate = WEEKLY_RATE_EUR[need];
+  const min = roundTo500(effort.weeksMin * rate * multiplier);
+  const max = Math.max(min + 500, roundTo500(effort.weeksMax * rate * multiplier));
 
-  const band = PROJECT_RANGES[need][integrations][scale];
-  return { ...band, kind: "project" };
+  return {
+    min,
+    max,
+    weeksMin: effort.weeksMin,
+    weeksMax: effort.weeksMax,
+    kind: need === "unclear" ? "definition" : "project",
+  };
+}
+
+function roundTo500(amount: number): number {
+  const rounded = Math.round(amount / 500) * 500;
+  return Math.max(500, rounded);
 }

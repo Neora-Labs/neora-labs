@@ -1,9 +1,13 @@
 import { Badge } from "@/components/ui/Badge";
 import { Reveal } from "@/components/ui/Reveal";
 import { HeroStage } from "@/components/hero/HeroStage";
-import { hero } from "@/lib/content";
+import type { Messages } from "@/i18n/messages/es";
 
-export function Hero() {
+type HeroProps = {
+  hero: Messages["hero"];
+};
+
+export function Hero({ hero }: HeroProps) {
   return (
     <section
       id="inicio"

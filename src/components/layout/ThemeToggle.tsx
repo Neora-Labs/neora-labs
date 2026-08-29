@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useMessages } from "@/components/i18n/MessagesProvider";
 import { cn } from "@/lib/cn";
 import {
   applyTheme,
@@ -15,6 +16,7 @@ type ThemeToggleProps = {
 };
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
+  const { ui } = useMessages();
   const theme = useSyncExternalStore(
     subscribeTheme,
     getThemeSnapshot,
@@ -29,16 +31,14 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={
-        theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"
-      }
+      aria-label={theme === "dark" ? ui.theme.light : ui.theme.dark}
       aria-pressed={theme === "dark"}
       className={cn(
         "inline-flex size-12 items-center justify-center rounded-[14px] text-text-primary transition-colors duration-200 hover:bg-bg-brand-soft",
         className,
       )}
     >
-      <span className="sr-only">Cambiar tema</span>
+      <span className="sr-only">{ui.theme.toggle}</span>
       {theme === "dark" ? <SunIcon /> : <MoonIcon />}
     </button>
   );

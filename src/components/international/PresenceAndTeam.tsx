@@ -3,9 +3,11 @@
 import { useEffect, useState, type FocusEvent } from "react";
 import { PresenceMap } from "@/components/international/PresenceMap";
 import { TeamRoster } from "@/components/international/TeamRoster";
-import { team, type LocationId, type TeamMemberId } from "@/lib/content";
+import { useMessages } from "@/components/i18n/MessagesProvider";
+import { type LocationId, type TeamMemberId } from "@/lib/content";
 
 export function PresenceAndTeam() {
+  const { team } = useMessages();
   const [activeLocation, setActiveLocation] = useState<LocationId | null>(null);
   const [selectedId, setSelectedId] = useState<TeamMemberId | null>(null);
 

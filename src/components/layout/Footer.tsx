@@ -1,7 +1,16 @@
+import { AgendaTrigger } from "@/components/agenda/AgendaProvider";
 import { Logo } from "@/components/brand/Logo";
-import { footer, navItems, site } from "@/lib/content";
+import { localePath, type Locale } from "@/i18n/config";
+import type { Messages } from "@/i18n/messages/es";
 
-export function Footer() {
+type FooterProps = {
+  footer: Messages["footer"];
+  navItems: Messages["navItems"];
+  site: Messages["site"];
+  locale: Locale;
+};
+
+export function Footer({ footer, navItems, site, locale }: FooterProps) {
   return (
     <footer className="bg-ink text-core-white">
       <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-5 pt-16 pb-10 md:px-10 xl:px-24">
@@ -23,7 +32,7 @@ export function Footer() {
               {navItems.slice(0, 3).map((item) => (
                 <a
                   key={item.href}
-                  href={item.href}
+                  href={localePath(locale, item.href)}
                   className="text-base leading-6 text-core-white transition-colors hover:text-accent"
                 >
                   {item.label}
@@ -35,22 +44,28 @@ export function Footer() {
                 {footer.contactLabel}
               </p>
               <a
-                href="#contacto"
+                href={localePath(locale, "/contacto")}
                 className="text-base leading-6 text-core-white transition-colors hover:text-accent"
               >
-                Hablemos
+                {footer.talk}
               </a>
-              <a
-                href="#contacto"
-                className="text-base leading-6 text-core-white transition-colors hover:text-accent"
+              <AgendaTrigger
+                variant="link"
+                className="cursor-pointer text-left text-base leading-6 text-core-white transition-colors hover:text-accent"
               >
-                LinkedIn
-              </a>
+                {footer.schedule}
+              </AgendaTrigger>
               <a
                 href={`mailto:${site.email}`}
                 className="text-base leading-6 text-core-white transition-colors hover:text-accent"
               >
                 {site.email}
+              </a>
+              <a
+                href={localePath(locale, "/privacidad")}
+                className="text-base leading-6 text-core-white transition-colors hover:text-accent"
+              >
+                {footer.privacy}
               </a>
             </div>
           </div>

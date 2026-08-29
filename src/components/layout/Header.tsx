@@ -1,17 +1,22 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { AgendaTrigger } from "@/components/agenda/AgendaProvider";
+import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
+import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { ThemedLogo } from "@/components/brand/Logo";
+import { localePath } from "@/i18n/config";
 import { cn } from "@/lib/cn";
-import { navItems, services } from "@/lib/content";
 
 export function Header() {
+  const { navItems, services, ui } = useMessages();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuLabel = open ? ui.header.closeMenu : ui.header.openMenu;
 
   useEffect(() => {
     if (!open) {
@@ -67,50 +72,55 @@ export function Header() {
     setOpen(false);
   }
 
-  const restNav = navItems.filter((item) => item.href !== "#servicios");
+  const restNav = navItems.filter((item) => item.href !== "/servicios" && item.href !== "#servicios");
 
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-border-default/60 bg-bg-default">
         <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between px-4 md:h-[88px] md:px-10 xl:h-[104px] xl:px-24">
-          <a href="#inicio" className="min-w-0 shrink-0" aria-label="Neora Labs, ir al inicio">
+          <a
+            href={localePath(locale, "#inicio")}
+            className="min-w-0 shrink-0"
+            aria-label={ui.header.homeAria}
+          >
             <ThemedLogo priority className="h-8 w-[128px] md:h-11 md:w-[175px]" />
           </a>
 
           <nav
             className="hidden items-center gap-[34px] lg:flex"
-            aria-label="Principal"
+            aria-label={ui.header.navAria}
           >
             <ServicesMega />
             {restNav.map((item) => (
               <a
                 key={item.href}
-                href={item.href}
+                href={localePath(locale, item.href)}
                 className="text-sm font-semibold tracking-[0.1px] text-text-primary transition-colors hover:text-text-brand"
               >
                 {item.label}
               </a>
             ))}
+            <LocaleSwitcher />
             <ThemeToggle />
-            <Button href="#contacto">Hablemos</Button>
+            <AgendaTrigger>{ui.header.schedule}</AgendaTrigger>
           </nav>
 
           <button
             ref={buttonRef}
             type="button"
             className="inline-flex size-11 items-center justify-center gap-2 rounded-[14px] text-text-primary transition-colors duration-200 hover:bg-bg-brand-soft min-[360px]:h-12 min-[360px]:w-auto min-[360px]:px-3 lg:hidden"
-            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            aria-label={menuLabel}
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen((value) => !value)}
           >
-            <span className="sr-only">{open ? "Cerrar menú" : "Abrir menú"}</span>
+            <span className="sr-only">{menuLabel}</span>
             <MenuToggle open={open} />
             <span
               aria-hidden="true"
-              className="hidden w-[52px] text-[11px] font-semibold tracking-[1.6px] min-[360px]:inline"
+              className="hidden min-w-[52px] text-[11px] font-semibold tracking-[1.6px] min-[360px]:inline"
             >
-              {open ? "CERRAR" : "MENÚ"}
+              {open ? ui.header.close : ui.header.menu}
             </span>
           </button>
         </div>
@@ -127,17 +137,17 @@ export function Header() {
       >
         <nav
           className="mx-auto flex min-h-full w-full max-w-[1440px] flex-col gap-6"
-          aria-label="Móvil"
+          aria-label={ui.header.mobileNavAria}
         >
           <div>
             <p className="mb-3 text-[11px] font-semibold tracking-[1.4px] text-text-secondary">
-              Servicios
+              {ui.header.services}
             </p>
             <div className="grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
               {services.items.map((item) => (
                 <a
                   key={item.id}
-                  href={item.href}
+                  href={localePath(locale, item.href)}
                   onClick={closeOnNavigate}
                   className="block w-full rounded-2xl border border-border-default bg-surface px-3.5 py-3 text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft"
                 >
@@ -145,12 +155,19 @@ export function Header() {
                 </a>
               ))}
             </div>
+            <a
+              href={localePath(locale, "/servicios")}
+              onClick={closeOnNavigate}
+              className="mt-3 inline-flex text-sm font-semibold text-text-brand"
+            >
+              {services.page.allServices}
+            </a>
           </div>
           <div className="flex flex-col divide-y divide-border-default border-y border-border-default">
             {restNav.map((item) => (
               <a
                 key={item.href}
-                href={item.href}
+                href={localePath(locale, item.href)}
                 onClick={closeOnNavigate}
                 className="py-3.5 text-base font-semibold text-text-primary"
               >
@@ -159,10 +176,11 @@ export function Header() {
             ))}
           </div>
           <div className="mt-auto flex flex-col gap-3 pt-1 min-[400px]:flex-row min-[400px]:items-center">
+            <LocaleSwitcher className="self-start min-[400px]:self-auto" menuPlacement="top" />
             <ThemeToggle className="self-start min-[400px]:self-auto" />
-            <Button href="#contacto" className="w-full min-[400px]:flex-1" onClick={closeOnNavigate}>
-              Hablemos
-            </Button>
+            <AgendaTrigger className="w-full min-[400px]:flex-1" onClick={closeOnNavigate}>
+              {ui.header.schedule}
+            </AgendaTrigger>
           </div>
         </nav>
       </div>
@@ -171,6 +189,8 @@ export function Header() {
 }
 
 function ServicesMega() {
+  const { services, ui } = useMessages();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -225,7 +245,7 @@ function ServicesMega() {
         aria-haspopup="true"
         onClick={() => setOpen((value) => !value)}
       >
-        Servicios
+        {ui.header.services}
         <Chevron open={open} />
       </button>
       {open ? (
@@ -234,7 +254,7 @@ function ServicesMega() {
             {services.items.map((item) => (
               <a
                 key={item.id}
-                href={item.href}
+                href={localePath(locale, item.href)}
                 onClick={() => setOpen(false)}
                 className="rounded-2xl p-3 transition-colors hover:bg-bg-brand-soft"
               >
@@ -245,6 +265,13 @@ function ServicesMega() {
                 <p className="mt-1 text-xs leading-5 text-text-secondary">{item.summary}</p>
               </a>
             ))}
+            <a
+              href={localePath(locale, "/servicios")}
+              onClick={() => setOpen(false)}
+              className="rounded-2xl p-3 text-sm font-semibold text-text-brand transition-colors hover:bg-bg-brand-soft sm:col-span-2"
+            >
+              {services.page.allServices}
+            </a>
           </div>
         </div>
       ) : null}

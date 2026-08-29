@@ -7,6 +7,7 @@ type LogoProps = {
   variant: BrandSurface;
   className?: string;
   priority?: boolean;
+  alt?: string;
 };
 
 const logoSources = {
@@ -36,11 +37,12 @@ export function Isotype({
   variant,
   className,
   priority = false,
+  alt = "Neora Labs",
 }: LogoProps) {
   return (
     <Image
       src={isotypeSources[variant]}
-      alt="Neora Labs"
+      alt={alt}
       width={44}
       height={44}
       className={cn("object-contain", className ?? "size-11")}
@@ -71,18 +73,25 @@ export function ThemedLogo({
 export function ThemedIsotype({
   className,
   priority = false,
+  alt = "Neora Labs",
 }: {
   className?: string;
   priority?: boolean;
+  alt?: string;
 }) {
   return (
     <>
       <Isotype
         variant="on-light"
         priority={priority}
+        alt={alt}
         className={cn("dark:hidden", className ?? "size-11")}
       />
-      <Isotype variant="on-dark" className={cn("hidden dark:block", className ?? "size-11")} />
+      <Isotype
+        variant="on-dark"
+        alt={alt}
+        className={cn("hidden dark:block", className ?? "size-11")}
+      />
     </>
   );
 }

@@ -1,23 +1,38 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { ServiceVisual } from "@/components/services/ServiceVisual";
+import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
+import { interpolate } from "@/i18n/interpolate";
+import { localePath } from "@/i18n/config";
+import { serviceHash } from "@/lib/content";
 import { cn } from "@/lib/cn";
-import { services } from "@/lib/content";
 
-const items = services.items;
 const CARD_SHIFT = 252;
+const COPY_EASE = [0.22, 1, 0.36, 1] as const;
 
 export function ServicesCarousel() {
+  const { services, ui } = useMessages();
+  const locale = useLocale();
+  const items = services.items;
   const labelId = useId();
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotion,
+    getServerReducedMotion,
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const count = items.length;
   const active = items[activeIndex] ?? items[0];
   const progress = `${String(activeIndex + 1).padStart(2, "0")}`;
+  const copyTransition = reducedMotion
+    ? { duration: 0 }
+    : { duration: 0.28, ease: COPY_EASE };
 
   useEffect(() => {
     function syncFromHash() {
-      const index = items.findIndex((item) => item.href === window.location.hash);
+      const index = items.findIndex((item) => serviceHash(item.id) === window.location.hash);
       if (index >= 0) {
         setActiveIndex(index);
       }
@@ -26,7 +41,7 @@ export function ServicesCarousel() {
     syncFromHash();
     window.addEventListener("hashchange", syncFromHash);
     return () => window.removeEventListener("hashchange", syncFromHash);
-  }, []);
+  }, [items]);
 
   function go(delta: number) {
     setActiveIndex((index) => (index + delta + count) % count);
@@ -43,7 +58,7 @@ export function ServicesCarousel() {
           )}
           aria-hidden={index !== activeIndex}
         >
-          <ServiceVisual item={item} className="h-full w-full" />
+          <ServiceVisual item={item} className="h-full w-full" sizes="100vw" />
         </div>
       ))}
 
@@ -52,8 +67,8 @@ export function ServicesCarousel() {
 
       {items.map((item) => (
         <span
-          key={item.href}
-          id={item.href.slice(1)}
+          key={item.id}
+          id={serviceHash(item.id).slice(1)}
           className="absolute top-0 left-0 scroll-mt-14 md:scroll-mt-[88px] xl:scroll-mt-[104px]"
         />
       ))}
@@ -67,26 +82,36 @@ export function ServicesCarousel() {
             </h2>
 
             <div className="mt-10" aria-live="polite">
-              <p className="text-[11px] font-semibold tracking-[0.9px] text-accent">{active.eyebrow}</p>
-              <h3 className="mt-4 text-[32px] leading-10 font-bold tracking-[-0.8px] text-core-white md:text-[40px] md:leading-[48px]">
-                {active.title}
-              </h3>
-              <p className="mt-4 max-w-[520px] text-base leading-7 text-core-white/72 md:text-lg">
-                {active.body}
-              </p>
-              <p className="mt-4 max-w-[520px] text-sm leading-6 text-core-white/90">{active.example}</p>
-              <a
-                href="#brief"
-                className="mt-8 inline-flex items-center text-sm font-semibold text-accent transition-colors hover:text-core-white"
-              >
-                Empezar un brief →
-              </a>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={active.id}
+                  initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+                  transition={copyTransition}
+                >
+                  <p className="text-[11px] font-semibold tracking-[0.9px] text-accent">{active.eyebrow}</p>
+                  <h3 className="mt-4 text-[32px] leading-10 font-bold tracking-[-0.8px] text-core-white md:text-[40px] md:leading-[48px]">
+                    {active.title}
+                  </h3>
+                  <p className="mt-4 max-w-[520px] text-base leading-7 text-core-white/72 md:text-lg">
+                    {active.body}
+                  </p>
+                  <p className="mt-4 max-w-[520px] text-sm leading-6 text-core-white/90">{active.example}</p>
+                  <a
+                    href={localePath(locale, active.href)}
+                    className="mt-8 inline-flex items-center text-sm font-semibold text-accent transition-colors hover:text-core-white"
+                  >
+                    {services.page.viewService}
+                  </a>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
           <div
             role="group"
-            aria-roledescription="carrusel"
+            aria-roledescription={ui.carouselRole}
             aria-labelledby={labelId}
             tabIndex={0}
             className="outline-none"
@@ -102,7 +127,7 @@ export function ServicesCarousel() {
             }}
           >
             <p id={labelId} className="sr-only">
-              Servicios de {services.heading}
+              {interpolate(ui.services.carouselLabel, { heading: services.heading })}
             </p>
             <div className="relative h-[360px] overflow-hidden sm:h-[400px] xl:h-[460px]">
               {items.map((item, index) => {
@@ -127,7 +152,11 @@ export function ServicesCarousel() {
                       opacity: hidden ? 0 : isActive ? 1 : 0.55,
                     }}
                   >
-                    <ServiceVisual item={item} className="h-[320px] sm:h-[360px] xl:h-[410px]" />
+                    <ServiceVisual
+                      item={item}
+                      className="h-[320px] sm:h-[360px] xl:h-[410px]"
+                      sizes="(min-width: 1280px) 250px, (min-width: 640px) 230px, 210px"
+                    />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/70 to-transparent px-5 pt-16 pb-5">
                       <p className="text-[11px] font-semibold tracking-[0.9px] text-accent">
                         {item.eyebrow}
@@ -143,10 +172,10 @@ export function ServicesCarousel() {
 
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           <div className="flex gap-2">
-            <CarouselArrow label="Servicio anterior" onClick={() => go(-1)}>
+            <CarouselArrow label={ui.services.previous} onClick={() => go(-1)}>
               <Chevron direction="left" />
             </CarouselArrow>
-            <CarouselArrow label="Servicio siguiente" onClick={() => go(1)}>
+            <CarouselArrow label={ui.services.next} onClick={() => go(1)}>
               <Chevron direction="right" />
             </CarouselArrow>
           </div>
@@ -168,6 +197,20 @@ export function ServicesCarousel() {
       </div>
     </div>
   );
+}
+
+function subscribeReducedMotion(onStoreChange: () => void) {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", onStoreChange);
+  return () => media.removeEventListener("change", onStoreChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getServerReducedMotion() {
+  return false;
 }
 
 function wrappedDelta(index: number, active: number, count: number): number {
