@@ -5,9 +5,10 @@ import type { Messages } from "@/i18n/messages/es";
 
 type HeroProps = {
   hero: Messages["hero"];
+  sprint: Messages["brief"]["sprint"];
 };
 
-export function Hero({ hero }: HeroProps) {
+export function Hero({ hero, sprint }: HeroProps) {
   return (
     <section
       id="inicio"
@@ -25,6 +26,12 @@ export function Hero({ hero }: HeroProps) {
         <p className="mt-6 max-w-[640px] text-lg leading-7 text-text-secondary">
           {hero.body}
         </p>
+        <aside className="mt-8 max-w-[640px] rounded-2xl border border-border-default bg-surface px-5 py-4 text-left">
+          <p className="text-xs font-semibold tracking-[0.2px] text-accent">{sprint.badge}</p>
+          <p className="mt-2 font-semibold text-text-primary">{sprint.title}</p>
+          <p className="mt-1 text-sm leading-6 text-text-secondary">{sprint.body}</p>
+          <p className="mt-3 text-sm font-bold text-text-brand">{sprint.price}</p>
+        </aside>
       </Reveal>
       <HeroStage />
     </section>

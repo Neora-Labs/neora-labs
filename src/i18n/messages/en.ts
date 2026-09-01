@@ -18,11 +18,11 @@ export const en = {
     { href: "/contacto", label: "Contact" },
   ],
   hero: {
-    badge: "CUSTOM SOFTWARE",
-    headline: ["We turn real problems", "into digital products", "that move forward."],
-    body: "We design and build reliable software for startups and SMEs in Europe and the United States. Strategy, technology, and close communication in one team.",
-    budgetCta: "Get a budget",
-    composerPlaceholder: "Describe the problem or what you want to build…",
+    badge: "TECHNOLOGY ADVISORY + IMPLEMENTATION",
+    headline: ["Fewer tools.", "Better decisions.", "Technology that moves the business forward."],
+    body: "We understand how your company works, identify what to keep, adopt, integrate, automate, or build, and give you a clear recommendation with indicative timing and investment.",
+    budgetCta: "Get a recommendation",
+    composerPlaceholder: "Tell us which problem, process, or technology decision is holding you back…",
   },
   heroSlides: [
     {
@@ -52,10 +52,9 @@ export const en = {
     },
   ],
   services: {
-    eyebrow: "WHAT WE BUILD",
-    heading: "Technology aligned with the business.",
-    intro:
-      "We start with the problem. Sometimes a website is enough; other times it is a product of your own, an automated flow, or AI where the return can be measured.",
+    eyebrow: "ADVISORY BEFORE IMPLEMENTATION",
+    heading: "Decide first. Then implement what creates value.",
+    intro: "We analyse the current process and tools to recommend whether to keep, adopt, integrate, automate, or build. Implementation follows a clear decision.",
     items: [
       {
         id: "ai" as ServiceId,
@@ -519,7 +518,11 @@ export const en = {
         placeholder: "nina.v@example.com",
       },
     },
-  },
+    sprint: { badge: "TECHNOLOGY DECISION SPRINT", title: "One week to decide what is worth doing.", body: "Diagnosis, priorities, and a concrete roadmap before investing in another tool.", price: "From €750 · 1 week", investment: "From €750", timeline: "1 week" },
+    emailCapture: { heading: "Want a copy of this recommendation?", body: "Leave your email optionally and we will send it.", placeholder: "name@company.com", submit: "Send recommendation", sending: "Sending…", sent: "Recommendation sent", invalid: "Enter a valid email.", skip: "No thanks" },
+    routes: { keep_current: "Keep and organise the current setup", adopt_tool: "Adopt a tool", integrate: "Integrate systems", automate: "Automate the process", custom_build: "Build a custom solution", advisory_sprint: "Technology decision sprint" }, outcomes: { clarity: "A prioritised, defensible decision.", reduce_manual: "Less manual work and rework.", connect_tools: "Connected data and teams without unnecessary replacement.", improve_existing: "Better use of what already works.", new_capability: "A new capability aligned with the business." }, assumptions: { tools: "We validate the limits of current tools.", access: "We need access to the people and data operating the process." }, risks: { time: "Risk: operating cost can keep growing if it is not measured.", revenue: "Risk: the bottleneck can limit revenue or conversion.", risk: "Risk: errors and manual dependencies can affect operations.", visibility: "Risk: without clear data, the decision can be delayed.", urgency: "Priority and scope are confirmed with the responsible team." }, nextStep: "A short conversation to validate the context and next move.", sprintNextStep: "Book the Technology Decision Sprint: one week to close the recommendation with evidence.", textTooShort: "Please share a little more context.", textTooLong: "Summarise it in one or two paragraphs.",
+    advisory: { problem: { prompt: "What problem, process, or technology decision is holding you back?", placeholder: "Tell us what problem, process, or technology decision is holding you back…" }, currentProcess: { prompt: "How is it handled today?", placeholder: "Describe the current process, even if it is manual or informal." }, businessImpact: { prompt: "What is the main impact?", options: { time: "Time and operating costs", revenue: "Revenue or conversion", risk: "Errors, risk, or compliance", visibility: "Lack of visibility to decide" } }, scale: { prompt: "How many people or customers does this process affect?", options: { small: "1–10 people", medium: "10–50 people", large: "More than 50 people" } }, currentTools: { prompt: "Which tools do you use today?", options: { none: "No defined tool", one: "One primary tool", several: "Several tools or systems" } }, desiredOutcome: { prompt: "Which outcome would be most valuable?", options: { clarity: "Know what is worth doing", reduce_manual: "Reduce manual work", connect_tools: "Connect tools", improve_existing: "Improve what we have", new_capability: "Enable something new" } }, urgency: { prompt: "When do you need to make a decision?", options: { now: "Now", this_quarter: "This quarter", flexible: "No fixed date" } } },
+    report: { route: "Recommended route", diagnosis: "Diagnosis of {problem}", diagnosisLabel: "Diagnosis", rationale: "We recommend {route} because today {process}", rationaleLabel: "Why", outcomeLabel: "Expected outcome", timelineLabel: "Indicative timeline", investmentLabel: "Indicative investment", assumptionsLabel: "Assumptions", risksLabel: "Risks", nextStepLabel: "Next step" }, advisorySummary: { problem: "Problem", process: "Current process", route: "Recommended route", impact: "Impact" },  },
   privacy: {
     title: "Privacy",
     updated: "Last updated: August 2026.",

@@ -13,7 +13,7 @@ export default async function Home({ params }: PageProps<"/[locale]">) {
 
   return (
     <main id="contenido">
-      <Hero hero={messages.hero} />
+      <Hero hero={messages.hero} sprint={messages.brief.sprint} />
       <Positioning
         testimonials={messages.testimonials}
         testimonialsAria={messages.ui.testimonials.aria}
