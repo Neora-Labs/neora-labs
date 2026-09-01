@@ -17,11 +17,11 @@ export const es = {
     { href: "/contacto", label: "Contacto" },
   ],
   hero: {
-    badge: "SOFTWARE A MEDIDA",
-    headline: ["Convertimos problemas reales", "en productos digitales", "que avanzan."],
-    body: "Diseñamos y construimos software confiable para startups y pymes de Europa y Estados Unidos. Estrategia, tecnología y comunicación cercana en un mismo equipo.",
-    budgetCta: "Conoce un presupuesto",
-    composerPlaceholder: "Describe el problema o lo que quieres construir…",
+    badge: "ASESORÍA TECNOLÓGICA + IMPLEMENTACIÓN",
+    headline: ["Menos herramientas.", "Mejores decisiones.", "Tecnología que sí aporta al negocio."],
+    body: "Entendemos cómo funciona tu empresa, identificamos qué conviene mantener, adoptar, integrar, automatizar o construir y te damos una recomendación clara con plazo e inversión orientativos.",
+    budgetCta: "Obtén una recomendación",
+    composerPlaceholder: "Cuéntanos qué problema, proceso o decisión tecnológica te está frenando…",
   },
   heroSlides: [
     {
@@ -51,10 +51,9 @@ export const es = {
     },
   ],
   services: {
-    eyebrow: "LO QUE CONSTRUIMOS",
-    heading: "Tecnología alineada con el negocio.",
-    intro:
-      "Empezamos por el problema. A veces basta una web; otras, un producto propio, automatizar un flujo o aplicar IA donde el retorno se puede medir.",
+    eyebrow: "ASESORÍA ANTES DE IMPLEMENTAR",
+    heading: "Primero decidimos. Después implementamos lo que aporta valor.",
+    intro: "Analizamos el proceso y las herramientas actuales para recomendar si conviene mantener, adoptar, integrar, automatizar o construir. La implementación viene después de una decisión clara.",
     items: [
       {
         id: "ai" as ServiceId,
@@ -518,7 +517,16 @@ export const es = {
         placeholder: "nina.v@example.com",
       },
     },
-  },
+    sprint: { badge: "SPRINT DE DECISIÓN TECNOLÓGICA", title: "Una semana para decidir qué conviene hacer.", body: "Diagnóstico, prioridades y una hoja de ruta concreta antes de invertir en otra herramienta.", price: "Desde 750 € · 1 semana", investment: "Desde 750 €", timeline: "1 semana" },
+    emailCapture: { heading: "¿Querés recibir esta recomendación?", body: "Dejanos tu email de forma opcional y te mandamos una copia.", placeholder: "nombre@empresa.com", submit: "Enviar recomendación", sending: "Enviando…", sent: "Recomendación enviada", invalid: "Ingresá un email válido.", skip: "No, gracias" },
+    routes: { keep_current: "Mantener y ordenar lo actual", adopt_tool: "Adoptar una herramienta", integrate: "Integrar sistemas", automate: "Automatizar el proceso", custom_build: "Construir una solución a medida", advisory_sprint: "Sprint de decisión tecnológica" },
+    outcomes: { clarity: "Una decisión priorizada y defendible.", reduce_manual: "Menos trabajo manual y menos retrabajo.", connect_tools: "Datos y equipos conectados sin reemplazos innecesarios.", improve_existing: "Mejor uso de lo que ya funciona.", new_capability: "Una capacidad nueva alineada con el negocio." },
+    assumptions: { tools: "Validamos las limitaciones de las herramientas actuales.", access: "Necesitamos acceso a las personas y datos que operan el proceso." },
+    risks: { time: "Riesgo: el costo operativo puede seguir creciendo si no se mide.", revenue: "Riesgo: el cuello de botella puede limitar ingresos o conversión.", risk: "Riesgo: errores y dependencias manuales pueden afectar la operación.", visibility: "Riesgo: sin datos claros, la decisión puede postergarse.", urgency: "La prioridad y el alcance se confirman con el equipo responsable." },
+    nextStep: "Una conversación breve para validar el contexto y el siguiente movimiento.", sprintNextStep: "Agendemos el Sprint de decisión tecnológica: una semana para cerrar la recomendación con evidencia.", textTooShort: "Contanos un poco más de contexto.", textTooLong: "Resumilo en uno o dos párrafos.",
+    advisory: { problem: { prompt: "¿Qué problema, proceso o decisión tecnológica te está frenando?", placeholder: "Cuéntanos qué problema, proceso o decisión tecnológica te está frenando…" }, currentProcess: { prompt: "¿Cómo se resuelve hoy?", placeholder: "Describí el proceso actual, aunque sea manual o informal." }, businessImpact: { prompt: "¿Qué impacto tiene principalmente?", options: { time: "Tiempo y costos operativos", revenue: "Ingresos o conversión", risk: "Errores, riesgo o cumplimiento", visibility: "Falta de visibilidad para decidir" } }, scale: { prompt: "¿Cuántas personas o clientes toca este proceso?", options: { small: "1–10 personas", medium: "10–50 personas", large: "Más de 50 personas" } }, currentTools: { prompt: "¿Con qué herramientas trabajan hoy?", options: { none: "Ninguna herramienta definida", one: "Una herramienta principal", several: "Varias herramientas o sistemas" } }, desiredOutcome: { prompt: "¿Qué resultado sería más valioso?", options: { clarity: "Saber qué conviene hacer", reduce_manual: "Reducir trabajo manual", connect_tools: "Conectar herramientas", improve_existing: "Mejorar lo que ya tenemos", new_capability: "Habilitar algo nuevo" } }, urgency: { prompt: "¿Cuándo necesitás tomar una decisión?", options: { now: "Ahora", this_quarter: "Este trimestre", flexible: "Sin fecha fija" } } },
+    report: { route: "Ruta recomendada", diagnosis: "Diagnóstico sobre {problem}", diagnosisLabel: "Diagnóstico", rationale: "Recomendamos {route} porque hoy {process}", rationaleLabel: "Por qué", outcomeLabel: "Resultado esperado", timelineLabel: "Plazo orientativo", investmentLabel: "Inversión orientativa", assumptionsLabel: "Supuestos", risksLabel: "Riesgos", nextStepLabel: "Siguiente paso" },
+    advisorySummary: { problem: "Problema", process: "Proceso actual", route: "Ruta recomendada", impact: "Impacto" },  },
   privacy: {
     title: "Privacidad",
     updated: "Última actualización: agosto de 2026.",

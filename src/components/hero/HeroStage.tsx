@@ -8,7 +8,6 @@ import {
   type BriefMorphPhase,
 } from "@/components/brief/BriefMorphShell";
 import { HeroCarousel } from "@/components/hero/HeroCarousel";
-import { useMessages } from "@/components/i18n/MessagesProvider";
 
 type BriefPhase = "idle" | BriefMorphPhase;
 
@@ -35,13 +34,11 @@ function snapshotOrigin(card: HTMLDivElement | null): BriefMorphOrigin {
 }
 
 export function HeroStage() {
-  const { heroSlides } = useMessages();
   const [activeIndex, setActiveIndex] = useState(0);
   const [phase, setPhase] = useState<BriefPhase>("idle");
   const [session, setSession] = useState(0);
   const [initialPrompt, setInitialPrompt] = useState("");
   const [origin, setOrigin] = useState<BriefMorphOrigin | null>(null);
-  const slide = heroSlides[activeIndex];
   const cardRef = useRef<HTMLDivElement>(null);
   const phaseRef = useRef<BriefPhase>("idle");
   const restoreFocusRef = useRef(false);
@@ -193,7 +190,6 @@ export function HeroStage() {
         >
           <BriefAgent
             key={session}
-            initialNeed={slide.id}
             initialPrompt={initialPrompt}
             onClose={closeBrief}
           />

@@ -14,11 +14,9 @@ import {
   getNextAgentTurn,
   validateTextStep,
   type BriefAnswers,
-  type BriefChoiceStep,
   type BriefReport,
   type BriefStep,
   type BriefStepId,
-  type NeedId,
 } from "@/lib/brief";
 import type { BriefChatMessage, BriefChatResponse } from "@/lib/brief-agent";
 import { cn } from "@/lib/cn";
@@ -51,20 +49,16 @@ const ghostButtonClassName =
 const sendButtonClassName =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-action text-action-fg transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60";
 
-type BriefAgentProps = {
-  initialNeed?: Exclude<NeedId, "unclear">;
-  initialPrompt?: string;
-  onClose?: () => void;
-};
+type BriefAgentProps = { initialPrompt?: string; onClose?: () => void; };
 
-export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentProps) {
+export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
   const messages = useMessages();
   const locale = useLocale();
   const { open: openAgenda } = useAgenda();
   const briefSteps = getBriefSteps(messages);
   const formId = useId();
   const logRef = useRef<HTMLDivElement>(null);
-  const answersRef = useRef<Partial<BriefAnswers>>(seedAnswers(initialNeed, initialPrompt));
+  const answersRef = useRef<Partial<BriefAnswers>>(seedAnswers(initialPrompt));
   const nextId = useRef(0);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
@@ -72,7 +66,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
     getServerReducedMotion,
   );
   const [answers, setAnswers] = useState<Partial<BriefAnswers>>(() =>
-    seedAnswers(initialNeed, initialPrompt),
+    seedAnswers(initialPrompt),
   );
   const [history, setHistory] = useState<ChatMessage[]>(() => seedUserMessage(initialPrompt));
   const historyRef = useRef<ChatMessage[]>(seedUserMessage(initialPrompt));
@@ -82,6 +76,8 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sendState, setSendState] = useState<SendState>("idle");
+  const [showEmailCapture, setShowEmailCapture] = useState(false);
+  const [email, setEmail] = useState("");
   const [showTurn, setShowTurn] = useState(true);
   const [busy, setBusy] = useState(() => Boolean(initialPrompt?.trim()));
 
@@ -107,7 +103,15 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
       : currentStep?.kind === "text"
         ? currentStep
         : null;
-  const needStep = briefSteps.find(isNeedStep);
+  const slotLabels: Record<BriefStepId, string> = {
+    problem: messages.brief.advisorySummary.problem,
+    currentProcess: messages.brief.advisorySummary.process,
+    businessImpact: messages.brief.advisorySummary.impact,
+    scale: messages.brief.advisory.scale.prompt,
+    currentTools: messages.brief.advisory.currentTools.prompt,
+    desiredOutcome: messages.brief.advisory.desiredOutcome.prompt,
+    urgency: messages.brief.advisory.urgency.prompt,
+  };
   const showEmpty = mode === "chat" && !isComplete && history.length === 0 && !busy;
   const showTyping = busy || (mode === "fsm" && !showTurn);
 
@@ -223,7 +227,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   }
 
   function applyChatChoice(step: Extract<BriefStep, { kind: "choice" }>, optionId: string) {
-    const label = formatStepAnswer(step, optionId, briefSteps);
+    const label = formatStepAnswer(step, optionId);
     const nextAnswers = { ...answersRef.current, [step.id]: optionId } as Partial<BriefAnswers>;
     const nextHistory = [...historyRef.current, createMessage("user", label)];
     setAnswers(nextAnswers);
@@ -274,13 +278,28 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
       return;
     }
 
+    const expectedStep = briefSteps.find((step) => {
+      const value = answersRef.current[step.id];
+      return value === undefined || value === "";
+    });
+    let nextAnswers = answersRef.current;
+    if (expectedStep?.kind === "text") {
+      const message = validateTextStep(expectedStep.id, trimmed, messages);
+      if (message) {
+        setError(message);
+        return;
+      }
+      nextAnswers = { ...answersRef.current, [expectedStep.id]: trimmed };
+      setAnswers(nextAnswers);
+      answersRef.current = nextAnswers;
+    }
     const nextHistory = [...historyRef.current, createMessage("user", trimmed)];
     setHistory(nextHistory);
     historyRef.current = nextHistory;
     setDraft("");
     setError(null);
     setBusy(true);
-    void requestChatTurn(nextHistory, answersRef.current);
+    void requestChatTurn(nextHistory, nextAnswers);
   }
 
   function restart() {
@@ -292,6 +311,8 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
     setDraft("");
     setError(null);
     setSendState("idle");
+    setShowEmailCapture(false);
+    setEmail("");
     setShowTurn(true);
     setClarifyField(null);
     setChatReport(null);
@@ -300,25 +321,24 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   }
 
   async function sendReport(current: BriefReport) {
+    const recipient = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+      setError(messages.brief.emailCapture.invalid);
+      return;
+    }
     setSendState("sending");
-
     try {
       const response = await fetch("/api/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale, ...current.answers }),
+        body: JSON.stringify({ locale, answers: current.answers, recommendedRoute: current.recommendedRoute, email: recipient }),
       });
       const payload = (await response.json()) as { emailed?: boolean };
-
-      if (response.ok && payload.emailed) {
-        setSendState("sent");
-        return;
-      }
+      if (response.ok && payload.emailed) { setSendState("sent"); return; }
     } catch {
-      // Fall through to mailto so the visitor still can send the brief.
+      // The mailto fallback preserves delivery when email service is unavailable.
     }
-
-    window.location.href = buildMailtoHref(current, messages);
+    window.location.href = buildMailtoHref(current, recipient, messages);
     setSendState("mailto");
   }
 
@@ -359,7 +379,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
           <SlotRail
             steps={briefSteps}
             answers={answers}
-            labels={messages.brief.slots}
+            labels={slotLabels}
             ariaLabel={isComplete ? messages.brief.reportReady : messages.brief.slotProgress}
             progressLabel={progressLabel}
           />
@@ -384,15 +404,7 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
           <EmptyStudio
             headline={messages.brief.emptyHeadline}
             intro={messages.brief.intro}
-            needStep={needStep}
-            selectedNeed={answers.need}
-            starters={messages.brief.starters}
             reducedMotion={reducedMotion}
-            onSelectNeed={(optionId) => {
-              if (needStep) {
-                applyChatChoice(needStep, optionId);
-              }
-            }}
           />
         ) : (
           <AnimatePresence initial={!reducedMotion}>
@@ -451,7 +463,12 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
                     </div>
                   ))}
                 </dl>
-                <p className="mt-6 text-sm leading-6 text-text-secondary">{report.nextStep}</p>
+                <ReportDetail title={messages.brief.report.diagnosisLabel} body={report.diagnosis} />
+                <ReportDetail title={messages.brief.report.rationaleLabel} body={report.rationale} />
+                <ReportDetail title={messages.brief.report.outcomeLabel} body={report.expectedOutcome} />
+                <ReportDetail title={messages.brief.report.assumptionsLabel} body={report.assumptions.join(" ")} />
+                <ReportDetail title={messages.brief.report.risksLabel} body={report.risks.join(" ")} />
+                <ReportDetail title={messages.brief.report.nextStepLabel} body={report.nextStep} />
               </motion.div>
             ) : null}
           </AnimatePresence>
@@ -491,50 +508,20 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
               ) : null}
 
               <div className="flex items-end gap-2">
-                {textStep?.inputMode === "email" ? (
-                  <input
-                    id={`${formId}-email`}
-                    type="email"
-                    autoComplete="email"
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      setError(null);
-                    }}
-                    placeholder={textStep.placeholder}
-                    className={cn(composerClassName, "min-w-0 flex-1 py-2")}
-                    disabled={composerLocked}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        submitComposer();
-                      }
-                    }}
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={error ? `${formId}-error` : undefined}
-                  />
-                ) : (
-                  <textarea
-                    id={`${formId}-composer`}
-                    rows={2}
-                    value={draft}
-                    onChange={(event) => {
-                      setDraft(event.target.value);
-                      setError(null);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        submitComposer();
-                      }
-                    }}
-                    placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
-                    className={cn(composerClassName, "min-w-0 flex-1")}
-                    disabled={composerLocked}
-                    aria-invalid={Boolean(error)}
-                    aria-describedby={error ? `${formId}-error` : undefined}
-                  />
-                )}
+                <textarea
+                  id={`${formId}-composer`}
+                  rows={2}
+                  value={draft}
+                  onChange={(event) => { setDraft(event.target.value); setError(null); }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitComposer(); }
+                  }}
+                  placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
+                  className={cn(composerClassName, "min-w-0 flex-1")}
+                  disabled={composerLocked}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? `${formId}-error` : undefined}
+                />
                 <button
                   type="submit"
                   disabled={composerLocked}
@@ -556,12 +543,19 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
-                onClick={() => void sendReport(report)}
-                disabled={sendState === "sending" || sendState === "sent"}
+                onClick={() => setShowEmailCapture(true)}
+                disabled={sendState === "sent"}
                 className={cn(primaryButtonClassName, "sm:flex-1")}
               >
                 {sendLabel(sendState, messages)}
               </button>
+              {showEmailCapture ? (
+                <form className="rounded-[18px] border border-border-default bg-surface-raised p-3 sm:col-span-2" onSubmit={(event) => { event.preventDefault(); void sendReport(report); }}>
+                  <p className="text-sm font-semibold text-text-primary">{messages.brief.emailCapture.heading}</p>
+                  <p className="mt-1 text-sm text-text-secondary">{messages.brief.emailCapture.body}</p>
+                  <div className="mt-3 flex gap-2"><input type="email" value={email} onChange={(event) => { setEmail(event.target.value); setError(null); }} placeholder={messages.brief.emailCapture.placeholder} className="min-w-0 flex-1 rounded-[12px] border border-border-default bg-surface px-3 py-2 text-sm text-text-primary" /><button type="submit" disabled={sendState === "sending" || sendState === "sent"} className={primaryButtonClassName}>{sendLabel(sendState, messages)}</button></div>
+                </form>
+              ) : null}
               <button type="button" onClick={handleSchedule} className={cn(secondaryButtonClassName, "sm:flex-1")}>
                 {messages.brief.talk}
               </button>
@@ -576,16 +570,9 @@ export function BriefAgent({ initialNeed, initialPrompt, onClose }: BriefAgentPr
   );
 }
 
-function seedAnswers(
-  need: Exclude<NeedId, "unclear"> | undefined,
-  prompt: string | undefined,
-): Partial<BriefAnswers> {
-  const next: Partial<BriefAnswers> = need ? { need } : {};
+function seedAnswers(prompt: string | undefined): Partial<BriefAnswers> {
   const text = prompt?.trim() ?? "";
-  if (text.length >= 10 && text.length <= 2000) {
-    next.problem = text;
-  }
-  return next;
+  return text.length >= 10 && text.length <= 2000 ? { problem: text } : {};
 }
 
 function seedUserMessage(prompt: string | undefined): ChatMessage[] {
@@ -630,7 +617,7 @@ function buildMessages(
       break;
     }
 
-    const text = formatStepAnswer(step, String(value), steps);
+    const text = formatStepAnswer(step, String(value));
 
     log.push({ id: `${step.id}-q`, role: "agent", text: step.prompt });
     log.push({ id: `${step.id}-a`, role: "user", text });
@@ -662,10 +649,6 @@ function bubbleTransition(reducedMotion: boolean) {
   }
 
   return { duration: 0.28, ease: BUBBLE_EASE };
-}
-
-function isNeedStep(step: BriefStep): step is BriefChoiceStep<"need"> {
-  return step.id === "need" && step.kind === "choice";
 }
 
 function SlotRail({
@@ -712,60 +695,19 @@ function SlotRail({
   );
 }
 
-function EmptyStudio({
-  headline,
-  intro,
-  needStep,
-  selectedNeed,
-  starters,
-  reducedMotion,
-  onSelectNeed,
-}: {
-  headline: string;
-  intro: string;
-  needStep: BriefChoiceStep<"need"> | undefined;
-  selectedNeed: NeedId | undefined;
-  starters: Record<NeedId, string>;
-  reducedMotion: boolean;
-  onSelectNeed: (optionId: NeedId) => void;
-}) {
+function EmptyStudio({ headline, intro, reducedMotion }: { headline: string; intro: string; reducedMotion: boolean }) {
   return (
-    <motion.div
-      initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={bubbleTransition(reducedMotion)}
-      className="relative flex w-full max-w-lg flex-col items-center px-2 text-center"
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-0 size-40 rounded-full bg-bg-brand-soft blur-3xl"
-      />
+    <motion.div initial={reducedMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={bubbleTransition(reducedMotion)} className="relative flex w-full max-w-lg flex-col items-center px-2 text-center">
+      <div aria-hidden className="pointer-events-none absolute top-0 size-40 rounded-full bg-bg-brand-soft blur-3xl" />
       <ThemedIsotype className="relative size-16" alt="" />
-      <h2 className="relative mt-6 text-2xl font-bold tracking-[-0.5px] text-text-primary sm:text-3xl">
-        {headline}
-      </h2>
+      <h2 className="relative mt-6 text-2xl font-bold tracking-[-0.5px] text-text-primary sm:text-3xl">{headline}</h2>
       <p className="relative mt-3 max-w-md text-sm leading-6 text-text-secondary">{intro}</p>
-      {needStep ? (
-        <div className="relative mt-6 flex flex-wrap justify-center gap-2" role="group" aria-label={needStep.prompt}>
-          {needStep.options.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => onSelectNeed(option.id)}
-              className={cn(
-                "rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors",
-                selectedNeed === option.id
-                  ? "border-border-strong bg-bg-brand-soft text-text-brand"
-                  : "border-border-strong bg-surface text-text-primary hover:bg-bg-brand-soft",
-              )}
-            >
-              {starters[option.id]}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </motion.div>
   );
+}
+
+function ReportDetail({ title, body }: { title: string; body: string }) {
+  return <div className="mt-5"><p className="text-[11px] font-semibold tracking-[0.9px] text-accent">{title}</p><p className="mt-1 text-sm leading-6 text-text-secondary">{body}</p></div>;
 }
 
 function AgentBubble({

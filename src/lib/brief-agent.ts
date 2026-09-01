@@ -6,350 +6,142 @@ import type { Messages } from "@/i18n/messages/es";
 import {
   buildBriefReport,
   parseBriefAnswers,
-  parseIntegrations,
-  parseNeed,
   parseScale,
-  parseStage,
+  recommendRouteFromAnswers,
   validateTextStep,
   type BriefAnswers,
   type BriefReport,
   type BriefStepId,
+  type RecommendedRoute,
 } from "@/lib/brief";
 
 export const MAX_CHAT_TURNS = 20;
 export const MAX_MESSAGE_CHARS = 2000;
 export const CONFIDENCE_FLOOR = 0.7;
+export type BriefChatMessage = { role: "user" | "agent"; text: string };
+export type BriefChatResponse = { fallback: boolean; reply: string | null; answers: Partial<BriefAnswers>; clarifyField: BriefStepId | null; report: BriefReport | null };
 
-export type BriefChatMessage = {
-  role: "user" | "agent";
-  text: string;
-};
-
-export type BriefChatResponse = {
-  fallback: boolean;
-  reply: string | null;
-  answers: Partial<BriefAnswers>;
-  clarifyField: BriefStepId | null;
-  report: BriefReport | null;
-};
-
-const SLOT_ORDER: readonly BriefStepId[] = [
-  "need",
-  "stage",
-  "scale",
-  "problem",
-  "integrations",
-  "email",
-];
-
-const needSchema = z.enum(["ai", "automation", "software", "web", "integrations", "unclear"]);
-const stageSchema = z.enum(["idea", "operating", "product"]);
-const scaleSchema = z.enum(["small", "medium", "large"]);
-const integrationsSchema = z.enum(["none", "one", "several"]);
-const stepSchema = z.enum(["need", "stage", "scale", "problem", "integrations", "email"]);
-
-const chatTurnSchema = z.object({
+const routes = ["keep_current", "adopt_tool", "integrate", "automate", "custom_build", "advisory_sprint"] as const;
+const fields = ["problem", "currentProcess", "businessImpact", "scale", "currentTools", "desiredOutcome", "urgency"] as const;
+const turnSchema = z.object({
   reply: z.string(),
   slots: z.object({
-    need: needSchema.nullable(),
-    stage: stageSchema.nullable(),
-    scale: scaleSchema.nullable(),
-    problem: z.string().nullable(),
-    integrations: integrationsSchema.nullable(),
-    email: z.string().nullable(),
-  }),
-  confidence: z.object({
-    need: z.number().min(0).max(1),
-    stage: z.number().min(0).max(1),
-    scale: z.number().min(0).max(1),
-    problem: z.number().min(0).max(1),
-    integrations: z.number().min(0).max(1),
-    email: z.number().min(0).max(1),
-  }),
-  clarifyField: stepSchema.nullable(),
+    problem: z.string().nullable().optional(), currentProcess: z.string().nullable().optional(),
+    businessImpact: z.enum(["time", "revenue", "risk", "visibility"]).nullable().optional(),
+    scale: z.enum(["small", "medium", "large"]).nullable().optional(),
+    currentTools: z.enum(["none", "one", "several"]).nullable().optional(),
+    desiredOutcome: z.enum(["clarity", "reduce_manual", "connect_tools", "improve_existing", "new_capability"]).nullable().optional(),
+    urgency: z.enum(["now", "this_quarter", "flexible"]).nullable().optional(),
+  }).partial(),
+  confidence: z.record(z.string(), z.number().min(0).max(1)).default({}),
+  recommendedRoute: z.enum(routes),
+  routeConfidence: z.number().min(0).max(1),
+  clarifyField: z.enum(fields).nullable().default(null),
 });
-
-export function hasOpenAiKey(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY?.trim());
-}
-
-export function sanitizePartialAnswers(
-  input: unknown,
-  catalog: Messages,
-): Partial<BriefAnswers> {
-  if (!isRecord(input)) {
-    return {};
-  }
-
-  const next: Partial<BriefAnswers> = {};
-  const need = parseNeed(input.need);
-  if (need) {
-    next.need = need;
-  }
-
-  const stage = parseStage(input.stage);
-  if (stage) {
-    next.stage = stage;
-  }
-
-  const scale = parseScale(input.scale);
-  if (scale) {
-    next.scale = scale;
-  }
-
-  const integrations = parseIntegrations(input.integrations);
-  if (integrations) {
-    next.integrations = integrations;
-  }
-
-  if (typeof input.problem === "string" && validateTextStep("problem", input.problem, catalog) === null) {
-    next.problem = input.problem.trim();
-  }
-
-  if (typeof input.email === "string" && validateTextStep("email", input.email, catalog) === null) {
-    next.email = input.email.trim();
-  }
-
-  return next;
-}
-
+export type AdvisoryTurn = z.infer<typeof turnSchema>;
+export function parseAdvisoryTurn(input: unknown) { return turnSchema.safeParse(input); }
+export function hasOpenAiKey(): boolean { return Boolean(process.env.OPENAI_API_KEY?.trim()); }
+export function countUserTurns(messages: readonly BriefChatMessage[]): number { return messages.filter((message) => message.role === "user").length; }
 export function parseChatHistory(input: unknown): BriefChatMessage[] | null {
-  if (!Array.isArray(input)) {
-    return null;
-  }
-
-  const messages: BriefChatMessage[] = [];
+  if (!Array.isArray(input)) return null;
+  const result: BriefChatMessage[] = [];
   for (const item of input) {
-    if (!isRecord(item)) {
-      return null;
-    }
-    if (item.role !== "user" && item.role !== "agent") {
-      return null;
-    }
-    if (typeof item.text !== "string") {
-      return null;
-    }
+    if (!isRecord(item) || (item.role !== "user" && item.role !== "agent") || typeof item.text !== "string") return null;
     const text = item.text.trim();
-    if (text.length === 0 || text.length > MAX_MESSAGE_CHARS) {
-      return null;
-    }
-    messages.push({ role: item.role, text });
+    if (!text || text.length > MAX_MESSAGE_CHARS) return null;
+    result.push({ role: item.role, text });
   }
-
-  return messages;
+  return result;
 }
-
-export function countUserTurns(messages: readonly BriefChatMessage[]): number {
-  return messages.filter((message) => message.role === "user").length;
+export function sanitizePartialAnswers(input: unknown, catalog: Messages): Partial<BriefAnswers> {
+  if (!isRecord(input)) return {};
+  const result: Partial<BriefAnswers> = {};
+  if (typeof input.problem === "string" && validateTextStep("problem", input.problem, catalog) === null) result.problem = input.problem.trim();
+  if (typeof input.currentProcess === "string" && validateTextStep("currentProcess", input.currentProcess, catalog) === null) result.currentProcess = input.currentProcess.trim();
+  if (input.businessImpact === "time" || input.businessImpact === "revenue" || input.businessImpact === "risk" || input.businessImpact === "visibility") result.businessImpact = input.businessImpact;
+  const scale = parseScale(input.scale); if (scale) result.scale = scale;
+  if (input.currentTools === "none" || input.currentTools === "one" || input.currentTools === "several") result.currentTools = input.currentTools;
+  if (input.desiredOutcome === "clarity" || input.desiredOutcome === "reduce_manual" || input.desiredOutcome === "connect_tools" || input.desiredOutcome === "improve_existing" || input.desiredOutcome === "new_capability") result.desiredOutcome = input.desiredOutcome;
+  if (input.urgency === "now" || input.urgency === "this_quarter" || input.urgency === "flexible") result.urgency = input.urgency;
+  return result;
 }
-
-export function mergeChatSlots(
-  current: Partial<BriefAnswers>,
-  extracted: z.infer<typeof chatTurnSchema>["slots"],
-  confidence: z.infer<typeof chatTurnSchema>["confidence"],
-  catalog: Messages,
-): Partial<BriefAnswers> {
-  const next = { ...current };
-
-  if (confidence.need >= CONFIDENCE_FLOOR) {
-    const need = parseNeed(extracted.need);
-    if (need) {
-      next.need = need;
-    }
-  }
-
-  if (confidence.stage >= CONFIDENCE_FLOOR) {
-    const stage = parseStage(extracted.stage);
-    if (stage) {
-      next.stage = stage;
-    }
-  }
-
-  if (confidence.scale >= CONFIDENCE_FLOOR) {
-    const scale = parseScale(extracted.scale);
-    if (scale) {
-      next.scale = scale;
-    }
-  }
-
-  if (confidence.integrations >= CONFIDENCE_FLOOR) {
-    const integrations = parseIntegrations(extracted.integrations);
-    if (integrations) {
-      next.integrations = integrations;
-    }
-  }
-
-  if (confidence.problem >= CONFIDENCE_FLOOR && extracted.problem) {
-    if (validateTextStep("problem", extracted.problem, catalog) === null) {
-      next.problem = extracted.problem.trim();
-    }
-  }
-
-  if (confidence.email >= CONFIDENCE_FLOOR && extracted.email) {
-    if (validateTextStep("email", extracted.email, catalog) === null) {
-      next.email = extracted.email.trim();
-    }
-  }
-
-  return next;
+export function nextIncompleteField(answers: Partial<BriefAnswers>): BriefStepId | null { return fields.find((field) => !answers[field]) ?? null; }
+export function resolveRecommendedRoute(route: RecommendedRoute, confidence: number): RecommendedRoute { return confidence < CONFIDENCE_FLOOR ? "advisory_sprint" : route; }
+export function selectResponseLanguage(history: readonly BriefChatMessage[], selectedLocale?: Locale): Locale {
+  const text = history.filter((message) => message.role === "user").map((message) => message.text.toLowerCase()).join(" ");
+  const scores = { en: count(text, /\b(the|and|with|our|need|current|tools|process)\b/g), es: count(text, /\b(el|la|los|con|necesitamos|proceso|herramientas)\b/g), pl: count(text, /\b(i|oraz|z|potrzebujemy|proces|narzÄ™dzia)\b/g) };
+  const dominant = (Object.entries(scores) as Array<[Locale, number]>).sort((a, b) => b[1] - a[1])[0];
+  return dominant && dominant[1] > 0 ? dominant[0] : selectedLocale ?? "es";
 }
-
-export function nextIncompleteField(answers: Partial<BriefAnswers>): BriefStepId | null {
-  const missing = SLOT_ORDER.find((id) => {
-    const value = answers[id];
-    return value === undefined || value === "";
-  });
-  return missing ?? null;
-}
-
-export function resolveClarifyField(
+export function resolveCompletedBrief(
   answers: Partial<BriefAnswers>,
-  requested: BriefStepId | null,
-): BriefStepId | null {
-  const missing = nextIncompleteField(answers);
-  if (missing === null) {
-    return null;
-  }
-
-  if (requested && (answers[requested] === undefined || answers[requested] === "")) {
-    return requested;
-  }
-
-  return missing;
+  catalog: Messages,
+  locale: Locale,
+  recommendation?: { route: RecommendedRoute; confidence: number },
+): BriefReport | null {
+  const complete = parseBriefAnswers(answers, catalog);
+  if (!complete.ok) return null;
+  const route = recommendation
+    ? resolveRecommendedRoute(recommendation.route, recommendation.confidence)
+    : recommendRouteFromAnswers(complete.answers);
+  return buildBriefReport(complete.answers, route, catalog, locale);
 }
 
-export function buildBriefAgentSystemPrompt(catalog: Messages, locale: Locale): string {
-  const { steps } = catalog.brief;
+export function buildBriefAgentSystemPrompt(catalog: Messages, language: Locale): string {
   return [
-    `You are the Neora Labs scoping agent. Reply only in ${locale}.`,
-    "Collect these fields by conversing. Never mention euros, prices, weeks, timelines, quotes, budgets, or investment ranges. Never invent IDs outside the enums below.",
-    "If a field is already in the confirmed JSON, do not re-ask unless the visitor clearly changes it.",
-    "If you are unsure (confidence below 0.7), set clarifyField to that field and ask a short question. The UI will show choice chips for choice fields.",
-    "If all six fields are present, acknowledge briefly that you will prepare an indicative report — still no numbers.",
-    "Keep replies to 1–3 short sentences. Be direct, not salesy.",
-    "",
-    "need:",
-    formatOptions(steps.need.options),
-    "stage:",
-    formatOptions(steps.stage.options),
-    "scale:",
-    formatOptions(steps.scale.options),
-    "integrations:",
-    formatOptions(steps.integrations.options),
-    "problem: 10–2000 characters describing what hurts, who it affects, and what would change.",
-    "email: a real email address.",
+    `You are Neora Labs' technology advisory agent. Reply in ${language}.`,
+    "Collect business context in this order: problem, currentProcess, businessImpact, scale, currentTools, desiredOutcome, urgency. Do not ask for email before the report.",
+    "Select exactly one recommendedRoute. If route confidence is below 0.7, choose advisory_sprint. Never output prices, investment or timelines: deterministic server logic does that.",
+    "Use only the schema IDs. Be concise and ask for the next missing field.",
   ].join("\n");
 }
-
-export async function runBriefChatTurn(options: {
-  locale: Locale;
-  history: BriefChatMessage[];
-  answers: Partial<BriefAnswers>;
-  catalog: Messages;
-}): Promise<BriefChatResponse> {
+export async function runBriefChatTurn(options: { locale: Locale; history: BriefChatMessage[]; answers: Partial<BriefAnswers>; catalog: Messages }): Promise<BriefChatResponse> {
   const { locale, history, answers, catalog } = options;
-
-  if (!hasOpenAiKey()) {
-    return emptyFallback(answers);
+  if (!hasOpenAiKey() || countUserTurns(history) > MAX_CHAT_TURNS) {
+    return deterministicFallback(answers, catalog, locale);
   }
 
-  if (countUserTurns(history) > MAX_CHAT_TURNS) {
-    return emptyFallback(answers);
+  try {
+    const { object: rawObject } = await generateObject({
+      model: openai(process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini"),
+      schema: turnSchema,
+      schemaName: "AdvisoryBriefTurn",
+      system: buildBriefAgentSystemPrompt(catalog, selectResponseLanguage(history, locale)),
+      messages: toModelMessages(history, answers),
+    });
+    const parsedTurn = parseAdvisoryTurn(rawObject);
+    if (!parsedTurn.success) return deterministicFallback(answers, catalog, locale);
+
+    const object = parsedTurn.data;
+    const merged = mergeChatSlots(answers, object, catalog);
+    const completed = resolveCompletedBrief(merged, catalog, locale, {
+      route: object.recommendedRoute,
+      confidence: object.routeConfidence,
+    });
+    if (completed) {
+      return { fallback: false, reply: object.reply.trim() || null, answers: completed.answers, clarifyField: null, report: completed };
+    }
+    return { fallback: false, reply: object.reply.trim() || null, answers: merged, clarifyField: resolveClarifyField(merged, object.clarifyField), report: null };
+  } catch {
+    return deterministicFallback(answers, catalog, locale);
   }
-
-  const completeBefore = parseBriefAnswers(answers, catalog);
-  if (completeBefore.ok) {
-    return {
-      fallback: false,
-      reply: null,
-      answers: completeBefore.answers,
-      clarifyField: null,
-      report: buildBriefReport(completeBefore.answers, catalog, locale),
-    };
-  }
-
-  const modelId = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
-  const { object } = await generateObject({
-    model: openai(modelId),
-    schema: chatTurnSchema,
-    schemaName: "BriefChatTurn",
-    schemaDescription: "Next scoping-agent reply and extracted brief slots.",
-    system: buildBriefAgentSystemPrompt(catalog, locale),
-    messages: toModelMessages(history, answers),
-  });
-
-  const merged = mergeChatSlots(answers, object.slots, object.confidence, catalog);
-  if (!merged.problem) {
-    const firstUser = history.find((item) => item.role === "user");
-    if (firstUser && validateTextStep("problem", firstUser.text, catalog) === null) {
-      merged.problem = firstUser.text.trim();
+}
+function mergeChatSlots(current: Partial<BriefAnswers>, turn: AdvisoryTurn, catalog: Messages): Partial<BriefAnswers> {
+  const next = { ...current };
+  for (const field of fields) {
+    const value = turn.slots[field];
+    if (value && (turn.confidence[field] ?? 0) >= CONFIDENCE_FLOOR) {
+      const candidate = sanitizePartialAnswers({ [field]: value }, catalog)[field];
+      if (candidate) Object.assign(next, { [field]: candidate });
     }
   }
-  const complete = parseBriefAnswers(merged, catalog);
-  if (complete.ok) {
-    return {
-      fallback: false,
-      reply: object.reply.trim() || null,
-      answers: complete.answers,
-      clarifyField: null,
-      report: buildBriefReport(complete.answers, catalog, locale),
-    };
-  }
-
-  return {
-    fallback: false,
-    reply: object.reply.trim() || null,
-    answers: merged,
-    clarifyField: resolveClarifyField(merged, object.clarifyField),
-    report: null,
-  };
+  return next;
 }
-
-function emptyFallback(answers: Partial<BriefAnswers>): BriefChatResponse {
-  return {
-    fallback: true,
-    reply: null,
-    answers,
-    clarifyField: null,
-    report: null,
-  };
+function resolveClarifyField(answers: Partial<BriefAnswers>, requested: BriefStepId | null): BriefStepId | null { const missing = nextIncompleteField(answers); return requested && !answers[requested] ? requested : missing; }
+function deterministicFallback(answers: Partial<BriefAnswers>, catalog: Messages, locale: Locale): BriefChatResponse {
+  const report = resolveCompletedBrief(answers, catalog, locale);
+  return { fallback: true, reply: null, answers: report?.answers ?? answers, clarifyField: null, report };
 }
-
-function toModelMessages(
-  history: BriefChatMessage[],
-  answers: Partial<BriefAnswers>,
-): Array<{ role: "user" | "assistant"; content: string }> {
-  const messages: Array<{ role: "user" | "assistant"; content: string }> = [
-    {
-      role: "user",
-      content: `Confirmed slots (JSON): ${JSON.stringify(answers)}`,
-    },
-  ];
-
-  if (history.length === 0) {
-    messages.push({
-      role: "user",
-      content: "Start. Greet briefly and ask for the next missing field.",
-    });
-    return messages;
-  }
-
-  for (const item of history) {
-    messages.push({
-      role: item.role === "agent" ? "assistant" : "user",
-      content: item.text,
-    });
-  }
-
-  return messages;
-}
-
-function formatOptions(options: Record<string, string>): string {
-  return Object.entries(options)
-    .map(([id, label]) => `- ${id}: ${label}`)
-    .join("\n");
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+function toModelMessages(history: BriefChatMessage[], answers: Partial<BriefAnswers>): Array<{ role: "user" | "assistant"; content: string }> { return [{ role: "user", content: `Confirmed slots (JSON): ${JSON.stringify(answers)}` }, ...history.map((message) => ({ role: message.role === "agent" ? "assistant" as const : "user" as const, content: message.text }))]; }
+function count(text: string, pattern: RegExp) { return text.match(pattern)?.length ?? 0; }
+function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
