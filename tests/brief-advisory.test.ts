@@ -8,7 +8,7 @@ import { getMessages } from "@/i18n/get-messages";
 
 const es = getMessages("es");
 const complete: BriefAnswers = {
-  problem: "Los pedidos se copian entre tres herramientas y se pierden horas cada dÃ­a.",
+  problem: "Los pedidos se copian entre tres herramientas y se pierden horas cada día.",
   currentProcess: "El equipo copia pedidos manualmente desde el correo al ERP.",
   businessImpact: "time",
   scale: "medium",
@@ -73,6 +73,15 @@ describe("advisory brief", () => {
     expect(recommendRouteFromAnswers(adoptAnswers)).toBe("adopt_tool");
     expect(resolveCompletedBrief(adoptAnswers, es, "es")).toMatchObject({ recommendedRoute: "adopt_tool" });
     expect(getNextAgentTurn(adoptAnswers, es, "es")).toMatchObject({ kind: "report", report: { recommendedRoute: "adopt_tool" } });
+  });
+
+  it("formats the investment band with a real en dash and euro sign", () => {
+    const report = buildBriefReport(complete, "automate", es, "es");
+    expect(report.investmentRange).toBe("56,5–92 k€");
+    // Guards the Latin-1 round-trip that once shipped "56,5â€“92 kâ‚¬" to visitors.
+    // Matches the mojibake lead bytes as sequences, never the legitimate "€" on its own.
+    expect(report.investmentRange).not.toMatch(/â€|Ã|Â/);
+    expect(report.body).toContain("56,5–92 k€");
   });
 
   it("uses the fixed sprint offer instead of a matrix range", () => {

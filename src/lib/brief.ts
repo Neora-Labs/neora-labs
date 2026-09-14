@@ -115,7 +115,7 @@ export function formatStepAnswer(step: BriefStep, value: string): string {
 }
 
 export function formatEuroBand(min: number, max: number, locale: Locale): string {
-  return `${formatThousands(min, locale)}â€“${formatThousands(max, locale)} kâ‚¬`;
+  return `${formatThousands(min, locale)}–${formatThousands(max, locale)} k€`;
 }
 
 export function formatWeeksBand(min: number, max: number, messages: Messages): string {
