@@ -131,6 +131,11 @@ describe("advisory brief", () => {
     }
   });
 
+  it("keeps Spanish copy in one register, without voseo", () => {
+    const flat = JSON.stringify(getMessages("es"));
+    expect(flat).not.toMatch(/Describí|Contanos|Ingresá|Dejanos|Resumilo|Querés|necesitás/);
+  });
+
   it("uses model route confidence on a completed guided brief", async () => {
     const prior = process.env.OPENAI_API_KEY;
     process.env.OPENAI_API_KEY = "test-key";
