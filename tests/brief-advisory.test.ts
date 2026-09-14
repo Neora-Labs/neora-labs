@@ -107,6 +107,30 @@ describe("advisory brief", () => {
     expect(pl.brief.emailCapture.body).toContain("Opcjonalnie");
   });
 
+  it("keeps Spanish and English advisory-first too, not just Polish", () => {
+    expect(getMessages("es").brief).toMatchObject({
+      eyebrow: "ASESORÍA TECNOLÓGICA",
+      title: "Asesor tecnológico",
+      reportReady: "Recomendación lista",
+      reportTitle: "Recomendación tecnológica — Neora Labs",
+      newBrief: "Nueva recomendación",
+    });
+    expect(getMessages("en").brief).toMatchObject({
+      eyebrow: "TECHNOLOGY ADVISORY",
+      title: "Technology advisor",
+      reportReady: "Recommendation ready",
+      reportTitle: "Technology recommendation — Neora Labs",
+      newBrief: "New recommendation",
+    });
+    // No locale may drift back to the retired project-scoping vocabulary.
+    for (const locale of ["es", "en", "pl"] as const) {
+      const { eyebrow, title, reportTitle, newBrief, emailSubject, sent } = getMessages(locale).brief;
+      for (const value of [eyebrow, title, reportTitle, newBrief, emailSubject, sent]) {
+        expect(value.toLowerCase()).not.toMatch(/brief|scoping|proyecto|informe/);
+      }
+    }
+  });
+
   it("uses model route confidence on a completed guided brief", async () => {
     const prior = process.env.OPENAI_API_KEY;
     process.env.OPENAI_API_KEY = "test-key";
