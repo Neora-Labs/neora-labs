@@ -34,8 +34,11 @@ const emptyAnswers: Partial<BriefAnswers> = {};
 const TURN_DELAY_MS = 400;
 const BUBBLE_EASE = [0.22, 1, 0.36, 1] as const;
 
+// brief-composer carries the outline reset: the global :focus-visible rule in
+// globals.css is unlayered, so it outranks Tailwind's focus:outline-none (which sits
+// in @layer utilities) no matter the specificity.
 const composerClassName =
-  "w-full resize-none bg-transparent px-1 py-1 text-sm text-text-primary placeholder:text-text-secondary focus:outline-none";
+  "brief-composer w-full resize-none bg-transparent px-1 py-1 text-sm text-text-primary placeholder:text-text-secondary";
 
 const primaryButtonClassName =
   "inline-flex h-11 items-center justify-center rounded-[14px] bg-action px-5 text-sm font-semibold text-action-fg transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60";
@@ -45,6 +48,10 @@ const secondaryButtonClassName =
 
 const ghostButtonClassName =
   "inline-flex h-11 items-center justify-center rounded-[14px] px-3 text-sm font-semibold text-text-secondary transition-colors hover:text-text-primary";
+
+// Inverse of the page surface, so it reads as a solid affordance in both themes.
+const backButtonClassName =
+  "inline-flex h-11 shrink-0 items-center justify-center rounded-[14px] bg-bg-inverse px-4 text-sm font-semibold text-text-inverse transition-opacity hover:opacity-90";
 
 const sendButtonClassName =
   "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-action text-action-fg transition-colors hover:bg-action-hover disabled:cursor-not-allowed disabled:opacity-60";
@@ -103,14 +110,15 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
       : currentStep?.kind === "text"
         ? currentStep
         : null;
+  // Short labels: the rail is a vertical column, so the full prompts do not fit.
   const slotLabels: Record<BriefStepId, string> = {
     problem: messages.brief.advisorySummary.problem,
     currentProcess: messages.brief.advisorySummary.process,
     businessImpact: messages.brief.advisorySummary.impact,
-    scale: messages.brief.advisory.scale.prompt,
-    currentTools: messages.brief.advisory.currentTools.prompt,
-    desiredOutcome: messages.brief.advisory.desiredOutcome.prompt,
-    urgency: messages.brief.advisory.urgency.prompt,
+    scale: messages.brief.advisorySummary.scale,
+    currentTools: messages.brief.advisorySummary.tools,
+    desiredOutcome: messages.brief.advisorySummary.outcome,
+    urgency: messages.brief.advisorySummary.urgency,
   };
   const showEmpty = mode === "chat" && !isComplete && history.length === 0 && !busy;
   const showTyping = busy || (mode === "fsm" && !showTurn);
@@ -357,6 +365,14 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
       });
   const showComposer = !isComplete && (mode === "chat" || Boolean(textStep));
   const composerLocked = busy || (mode === "fsm" && !showTurn);
+  // The step the visitor is on: whatever the agent asked to clarify, else the FSM's
+  // current question, else the first unanswered slot. Null once the report exists.
+  const activeStepId: BriefStepId | null = isComplete
+    ? null
+    : (clarifyStep?.id ??
+      currentStep?.id ??
+      briefSteps.find((step) => !answers[step.id])?.id ??
+      null);
 
   return (
     <div
@@ -376,194 +392,201 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
           </div>
         </div>
         <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-          <SlotRail
-            steps={briefSteps}
-            answers={answers}
-            labels={slotLabels}
-            ariaLabel={isComplete ? messages.brief.reportReady : messages.brief.slotProgress}
-            progressLabel={progressLabel}
-          />
           {onClose ? (
-            <button type="button" onClick={onClose} className={ghostButtonClassName}>
+            <button type="button" onClick={onClose} className={backButtonClassName}>
               {messages.brief.backToSite}
             </button>
           ) : null}
         </div>
       </header>
 
-      <div
-        ref={logRef}
-        className={cn(
-          "mx-auto flex w-full max-w-3xl flex-1 flex-col overflow-y-auto px-4 sm:px-6",
-          showEmpty ? "items-center justify-center py-6" : "gap-4 py-6",
-        )}
-        aria-live="polite"
-        aria-relevant="additions"
-      >
-        {showEmpty ? (
-          <EmptyStudio
-            headline={messages.brief.emptyHeadline}
-            intro={messages.brief.intro}
-            reducedMotion={reducedMotion}
-          />
-        ) : (
-          <AnimatePresence initial={!reducedMotion}>
-            {visibleLog.map((message) =>
-              message.role === "agent" ? (
-                <AgentBubble key={message.id} reducedMotion={reducedMotion}>
-                  {message.text}
-                </AgentBubble>
-              ) : (
-                <UserBubble key={message.id} reducedMotion={reducedMotion}>
-                  {message.text}
-                </UserBubble>
-              ),
+      {/* The rail and the chat are centred as one group, so the rail sits against the
+          conversation instead of drifting out to the viewport edge. */}
+      <div className="flex min-h-0 flex-1 justify-center">
+        <SlotRail
+          steps={briefSteps}
+          answers={answers}
+          labels={slotLabels}
+          activeStepId={activeStepId}
+          ariaLabel={isComplete ? messages.brief.reportReady : messages.brief.slotProgress}
+          progressLabel={progressLabel}
+        />
+        <div className="flex w-full min-w-0 max-w-3xl flex-col">
+          <div
+            ref={logRef}
+            className={cn(
+              "flex w-full flex-1 flex-col overflow-y-auto px-4 sm:px-6",
+              showEmpty ? "items-center justify-center py-6" : "gap-4 py-6",
             )}
-            {currentStep ? (
-              <AgentBubble key={`${currentStep.id}-q`} reducedMotion={reducedMotion}>
-                {currentStep.prompt}
-              </AgentBubble>
-            ) : null}
-            {showTyping ? <TypingIndicator key="typing" reducedMotion={reducedMotion} /> : null}
-            {report ? (
-              <motion.div
-                key="report"
-                initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
-                transition={bubbleTransition(reducedMotion)}
-                className="rounded-[28px] border border-border-default bg-surface p-6 sm:p-8"
-              >
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.2px] text-accent">
-                      {messages.brief.investmentHeading}
-                    </p>
-                    <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
-                      {report.rangeLabel}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold tracking-[0.2px] text-accent">
-                      {messages.brief.timeHeading}
-                    </p>
-                    <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
-                      {report.timeLabel}
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-3 text-sm leading-6 text-text-secondary">
-                  {messages.brief.investmentDisclaimer}
-                </p>
-                <dl className="mt-6 grid gap-4 sm:grid-cols-2">
-                  {report.summaryLines.map((line) => (
-                    <div key={line.label}>
-                      <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
-                      <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
+            aria-live="polite"
+            aria-relevant="additions"
+          >
+            {showEmpty ? (
+              <EmptyStudio
+                headline={messages.brief.emptyHeadline}
+                intro={messages.brief.intro}
+                reducedMotion={reducedMotion}
+              />
+            ) : (
+              <AnimatePresence initial={!reducedMotion}>
+                {visibleLog.map((message) =>
+                  message.role === "agent" ? (
+                    <AgentBubble key={message.id} reducedMotion={reducedMotion}>
+                      {message.text}
+                    </AgentBubble>
+                  ) : (
+                    <UserBubble key={message.id} reducedMotion={reducedMotion}>
+                      {message.text}
+                    </UserBubble>
+                  ),
+                )}
+                {currentStep ? (
+                  <AgentBubble key={`${currentStep.id}-q`} reducedMotion={reducedMotion}>
+                    {currentStep.prompt}
+                  </AgentBubble>
+                ) : null}
+                {showTyping ? <TypingIndicator key="typing" reducedMotion={reducedMotion} /> : null}
+                {report ? (
+                  <motion.div
+                    key="report"
+                    initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reducedMotion ? undefined : { opacity: 0, y: 4 }}
+                    transition={bubbleTransition(reducedMotion)}
+                    className="rounded-[28px] border border-border-default bg-surface p-6 sm:p-8"
+                  >
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2px] text-accent">
+                          {messages.brief.investmentHeading}
+                        </p>
+                        <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
+                          {report.rangeLabel}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2px] text-accent">
+                          {messages.brief.timeHeading}
+                        </p>
+                        <p className="mt-2 text-3xl font-bold tracking-[-0.6px] text-text-primary">
+                          {report.timeLabel}
+                        </p>
+                      </div>
                     </div>
-                  ))}
-                </dl>
-                <ReportDetail title={messages.brief.report.diagnosisLabel} body={report.diagnosis} />
-                <ReportDetail title={messages.brief.report.rationaleLabel} body={report.rationale} />
-                <ReportDetail title={messages.brief.report.outcomeLabel} body={report.expectedOutcome} />
-                <ReportDetail title={messages.brief.report.assumptionsLabel} body={report.assumptions.join(" ")} />
-                <ReportDetail title={messages.brief.report.risksLabel} body={report.risks.join(" ")} />
-                <ReportDetail title={messages.brief.report.nextStepLabel} body={report.nextStep} />
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        )}
-      </div>
+                    <p className="mt-3 text-sm leading-6 text-text-secondary">
+                      {messages.brief.investmentDisclaimer}
+                    </p>
+                    <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+                      {report.summaryLines.map((line) => (
+                        <div key={line.label}>
+                          <dt className="text-[11px] font-semibold tracking-[0.9px] text-accent">{line.label}</dt>
+                          <dd className="mt-1 text-sm leading-6 text-text-primary">{line.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                    <ReportDetail title={messages.brief.report.diagnosisLabel} body={report.diagnosis} />
+                    <ReportDetail title={messages.brief.report.rationaleLabel} body={report.rationale} />
+                    <ReportDetail title={messages.brief.report.outcomeLabel} body={report.expectedOutcome} />
+                    <ReportDetail title={messages.brief.report.assumptionsLabel} body={report.assumptions.join(" ")} />
+                    <ReportDetail title={messages.brief.report.risksLabel} body={report.risks.join(" ")} />
+                    <ReportDetail title={messages.brief.report.nextStepLabel} body={report.nextStep} />
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            )}
+          </div>
 
-      <div className="shrink-0 bg-bg-default px-4 pb-5 pt-1 sm:px-6">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
-          {showComposer ? (
-            <form
-              className="rounded-[22px] border border-border-default bg-surface-raised p-3 shadow-sm"
-              onSubmit={(event) => {
-                event.preventDefault();
-                submitComposer();
-              }}
-            >
-              {choiceStep && !isComplete && !showEmpty ? (
-                <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={choiceStep.prompt}>
-                  {choiceStep.options.map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      disabled={composerLocked}
-                      onClick={() => {
-                        if (mode === "chat") {
-                          applyChatChoice(choiceStep, option.id);
-                          return;
-                        }
-                        applyFsmAnswer(choiceStep.id, option.id);
-                      }}
-                      className="rounded-full border border-border-strong bg-surface px-3.5 py-2 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="flex items-end gap-2">
-                <textarea
-                  id={`${formId}-composer`}
-                  rows={2}
-                  value={draft}
-                  onChange={(event) => { setDraft(event.target.value); setError(null); }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitComposer(); }
+          <div className="shrink-0 bg-bg-default px-4 pb-5 pt-1 sm:px-6">
+            <div className="flex w-full flex-col gap-3">
+              {showComposer ? (
+                <form
+                  className="rounded-[22px] bg-surface-raised p-3 shadow-sm transition-shadow focus-within:ring-1 focus-within:ring-border-strong"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submitComposer();
                   }}
-                  placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
-                  className={cn(composerClassName, "min-w-0 flex-1")}
-                  disabled={composerLocked}
-                  aria-invalid={Boolean(error)}
-                  aria-describedby={error ? `${formId}-error` : undefined}
-                />
-                <button
-                  type="submit"
-                  disabled={composerLocked}
-                  className={sendButtonClassName}
-                  aria-label={messages.brief.sendAria}
                 >
-                  <SendIcon />
-                </button>
-              </div>
-              {error ? (
-                <p id={`${formId}-error`} className="px-1 pt-2 text-sm text-text-brand">
-                  {error}
-                </p>
-              ) : null}
-            </form>
-          ) : null}
+                  {choiceStep && !isComplete && !showEmpty ? (
+                    <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label={choiceStep.prompt}>
+                      {choiceStep.options.map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          disabled={composerLocked}
+                          onClick={() => {
+                            if (mode === "chat") {
+                              applyChatChoice(choiceStep, option.id);
+                              return;
+                            }
+                            applyFsmAnswer(choiceStep.id, option.id);
+                          }}
+                          className="rounded-full border border-border-strong bg-surface px-3.5 py-2 text-left text-sm font-semibold text-text-primary transition-colors hover:bg-bg-brand-soft disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
 
-          {report ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => setShowEmailCapture(true)}
-                disabled={sendState === "sent"}
-                className={cn(primaryButtonClassName, "sm:flex-1")}
-              >
-                {sendLabel(sendState, messages)}
-              </button>
-              {showEmailCapture ? (
-                <form className="rounded-[18px] border border-border-default bg-surface-raised p-3 sm:col-span-2" onSubmit={(event) => { event.preventDefault(); void sendReport(report); }}>
-                  <p className="text-sm font-semibold text-text-primary">{messages.brief.emailCapture.heading}</p>
-                  <p className="mt-1 text-sm text-text-secondary">{messages.brief.emailCapture.body}</p>
-                  <div className="mt-3 flex gap-2"><input type="email" value={email} onChange={(event) => { setEmail(event.target.value); setError(null); }} placeholder={messages.brief.emailCapture.placeholder} className="min-w-0 flex-1 rounded-[12px] border border-border-default bg-surface px-3 py-2 text-sm text-text-primary" /><button type="submit" disabled={sendState === "sending" || sendState === "sent"} className={primaryButtonClassName}>{sendLabel(sendState, messages)}</button></div>
+                  <div className="flex items-end gap-2">
+                    <textarea
+                      id={`${formId}-composer`}
+                      rows={2}
+                      value={draft}
+                      onChange={(event) => { setDraft(event.target.value); setError(null); }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitComposer(); }
+                      }}
+                      placeholder={textStep?.placeholder ?? messages.brief.composerPlaceholder}
+                      className={cn(composerClassName, "min-w-0 flex-1")}
+                      disabled={composerLocked}
+                      aria-invalid={Boolean(error)}
+                      aria-describedby={error ? `${formId}-error` : undefined}
+                    />
+                    <button
+                      type="submit"
+                      disabled={composerLocked}
+                      className={sendButtonClassName}
+                      aria-label={messages.brief.sendAria}
+                    >
+                      <SendIcon />
+                    </button>
+                  </div>
+                  {error ? (
+                    <p id={`${formId}-error`} className="px-1 pt-2 text-sm text-text-brand">
+                      {error}
+                    </p>
+                  ) : null}
                 </form>
               ) : null}
-              <button type="button" onClick={handleSchedule} className={cn(secondaryButtonClassName, "sm:flex-1")}>
-                {messages.brief.talk}
-              </button>
-              <button type="button" onClick={restart} className={ghostButtonClassName}>
-                {messages.brief.newBrief}
-              </button>
+
+              {report ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailCapture(true)}
+                    disabled={sendState === "sent"}
+                    className={cn(primaryButtonClassName, "sm:flex-1")}
+                  >
+                    {sendLabel(sendState, messages)}
+                  </button>
+                  {showEmailCapture ? (
+                    <form className="rounded-[18px] border border-border-default bg-surface-raised p-3 sm:col-span-2" onSubmit={(event) => { event.preventDefault(); void sendReport(report); }}>
+                      <p className="text-sm font-semibold text-text-primary">{messages.brief.emailCapture.heading}</p>
+                      <p className="mt-1 text-sm text-text-secondary">{messages.brief.emailCapture.body}</p>
+                      <div className="mt-3 flex gap-2"><input type="email" value={email} onChange={(event) => { setEmail(event.target.value); setError(null); }} placeholder={messages.brief.emailCapture.placeholder} className="min-w-0 flex-1 rounded-[12px] border border-border-default bg-surface px-3 py-2 text-sm text-text-primary" /><button type="submit" disabled={sendState === "sending" || sendState === "sent"} className={primaryButtonClassName}>{sendLabel(sendState, messages)}</button></div>
+                    </form>
+                  ) : null}
+                  <button type="button" onClick={handleSchedule} className={cn(secondaryButtonClassName, "sm:flex-1")}>
+                    {messages.brief.talk}
+                  </button>
+                  <button type="button" onClick={restart} className={ghostButtonClassName}>
+                    {messages.brief.newBrief}
+                  </button>
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </div>
       </div>
     </div>
@@ -655,38 +678,63 @@ function SlotRail({
   steps,
   answers,
   labels,
+  activeStepId,
   ariaLabel,
   progressLabel,
 }: {
   steps: readonly BriefStep[];
   answers: Partial<BriefAnswers>;
   labels: Record<BriefStepId, string>;
+  activeStepId: BriefStepId | null;
   ariaLabel: string;
   progressLabel: string;
 }) {
   return (
-    <nav aria-label={ariaLabel} className="min-w-0">
+    <nav
+      aria-label={ariaLabel}
+      className="shrink-0 self-center py-6 pr-1 pl-2 sm:pr-2 sm:pl-4"
+    >
       <p className="sr-only">{progressLabel}</p>
-      <ol className="flex items-center gap-1.5 sm:gap-3">
+      <ol className="flex flex-col gap-3">
         {steps.map((step) => {
           const filled = Boolean(answers[step.id]);
+          const active = step.id === activeStepId;
           return (
-            <li key={step.id} className="flex items-center gap-1.5">
-              <span
-                className={cn(
-                  "size-2 rounded-full",
-                  filled ? "bg-action" : "bg-border-strong",
-                )}
+            <li key={step.id}>
+              <div
+                aria-current={active ? "step" : undefined}
                 title={labels[step.id]}
-              />
-              <span
                 className={cn(
-                  "hidden text-[11px] font-semibold tracking-[0.2px] md:inline",
-                  filled ? "text-accent" : "text-text-secondary",
+                  // No surface of its own: the active step is marked by the accent bar,
+                  // a larger dot and weight. The transparent border on the other rows
+                  // keeps the column from shifting as the marker moves down.
+                  "flex items-center gap-2.5 border-l-2 py-1.5 pr-2 pl-2.5",
+                  active ? "border-text-brand" : "border-transparent",
                 )}
               >
-                {labels[step.id]}
-              </span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full transition-colors",
+                    active
+                      ? "size-2.5 bg-text-brand"
+                      : filled
+                        ? "size-2 bg-action"
+                        : "size-2 bg-border-strong",
+                  )}
+                />
+                <span
+                  className={cn(
+                    // text-brand, never text-accent: accent is a mid teal that drops to
+                    // 1.8:1 on the light background.
+                    "hidden text-[11px] leading-4 tracking-[0.2px] whitespace-nowrap md:inline",
+                    active
+                      ? "font-bold text-text-brand"
+                      : "font-semibold text-text-secondary",
+                  )}
+                >
+                  {labels[step.id]}
+                </span>
+              </div>
             </li>
           );
         })}
