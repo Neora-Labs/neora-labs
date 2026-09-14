@@ -92,7 +92,14 @@ export default async function LocaleLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body className="min-h-full bg-bg-default font-sans text-text-primary">
+      {/* suppressHydrationWarning covers only this element's own attributes, not its
+          descendants. The className here is fully static, so nothing real can mismatch —
+          it silences browser extensions (ColorZilla's cz-shortcut-listen, Grammarly's
+          data-gr-*) that stamp attributes on body before React hydrates. */}
+      <body
+        className="min-h-full bg-bg-default font-sans text-text-primary"
+        suppressHydrationWarning
+      >
         <MessagesProvider locale={locale} messages={messages}>
           <AgendaProvider calUrl={getCalEmbedUrl()}>
             <a
