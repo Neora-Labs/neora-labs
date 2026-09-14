@@ -73,11 +73,11 @@ Keep new files in the matching folder. Do not introduce `src/pages/` or a second
 
 | Command | When |
 | --- | --- |
-| `npm run dev` | Iterate. Use this in agent sessions. |
-| `npm run lint` | Check before finishing. There is no test suite; lint is the programmatic check. |
-| `npm run build` | Production only. **Do not run in an agent session** — it switches `.next` to production assets and breaks HMR. |
+| `pnpm dev` | Iterate. Use this in agent sessions. |
+| `pnpm lint` | Check before finishing. There is no test suite; lint is the programmatic check. |
+| `pnpm build` | Production only. **Do not run in an agent session** — it switches `.next` to production assets and breaks HMR. |
 
-Restart `npm run dev` after adding or updating dependencies so Next.js picks up the lockfile.
+Restart `pnpm dev` after adding or updating dependencies so Next.js picks up the lockfile.
 
 ## Conventions
 
@@ -94,6 +94,8 @@ Restart `npm run dev` after adding or updating dependencies so Next.js picks up 
 **UI primitives.** Reuse `Button`, `Badge`, `Card`, and `Reveal`. Do not add a component library.
 
 **Next.js 16.** Do not add `middleware.ts`. If request interception is needed later, use `src/proxy.ts`. Read bundled docs under `node_modules/next/dist/docs/` before using APIs.
+
+**Package manager.** pnpm only, pinned by `packageManager` in `package.json`. Add dependencies with `pnpm add`; never run `npm install` or `yarn` — they would regenerate a competing lockfile. `pnpm-lock.yaml` is the only lockfile and is committed.
 
 **Git.** Do not commit unless asked. Do not commit `.env*`.
 

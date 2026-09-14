@@ -4,19 +4,22 @@ Sitio web de Neora Labs: software a medida para startups y pymes de Europa y Est
 
 ## Desarrollo local
 
+Este proyecto usa **pnpm** (la versión está fijada en el campo `packageManager` de `package.json`). Si no lo tienes, actívalo con `corepack enable`.
+
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Abre [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-- `npm run dev` — servidor de desarrollo
-- `npm run build` — build de producción
-- `npm run start` — servir el build
-- `npm run lint` — ESLint
+- `pnpm dev` — servidor de desarrollo
+- `pnpm build` — build de producción
+- `pnpm start` — servir el build
+- `pnpm lint` — ESLint
+- `pnpm test` — Vitest
 
 ## Stack
 
