@@ -413,30 +413,13 @@ export const en = {
     backToSite: "Back to the site",
     reportReady: "Recommendation ready",
     progress: "{completed} / {total}",
-    slots: {
-      need: "Type",
-      stage: "Stage",
-      scale: "Scale",
-      problem: "Problem",
-      integrations: "Systems",
-      email: "Email",
-    },
-    starters: {
-      ai: "AI",
-      automation: "Automate",
-      software: "Software",
-      web: "Web",
-      integrations: "Integrations",
-      unclear: "Not sure yet",
-    },
+
     investmentHeading: "INDICATIVE INVESTMENT",
     timeHeading: "INDICATIVE TIMELINE",
     investmentDisclaimer: "Confirmed on a call. This is not a closed quote.",
     composerPlaceholder: "Write in your own words…",
     chatFallback: "We will continue with the guided questions.",
-    chatError: "I could not continue. Try again or pick an option.",
-    turnLimit: "We have reached the limit of this conversation. Pick an option or start again.",
-    submit: "Send",
+
     sending: "Sending…",
     sent: "Recommendation sent",
     mailtoAgain: "Open email again",
@@ -445,12 +428,9 @@ export const en = {
     newBrief: "New recommendation",
     thinking: "Thinking…",
     definitionBand: "Definition session · {range}",
-    nextStepDefinition: "A definition session to land the scope before we build.",
-    nextStepCall: "A call to confirm scope, timing, and the investment range.",
+
     reportTitle: "Technology recommendation — Neora Labs",
-    nextStepLabel: "Next step",
-    investmentLine: "Indicative investment: {range} · confirmed on a call",
-    timeLine: "Indicative timeline: {weeks} · confirmed on a call",
+
     weeksBand: "{min}–{max} weeks",
     visitorContact: "Visitor contact",
     visitorEmailSubject: "Your technology recommendation — Neora Labs",
@@ -461,63 +441,7 @@ export const en = {
     invalidJson: "Invalid JSON.",
     invalidPayload: "Invalid payload.",
     missingAnswers: "Brief answers are missing.",
-    problemLength: "Describe the problem in 10 to 2000 characters.",
-    invalidEmail: "The email is not valid.",
-    problemTooShort: "A little more context helps us narrow the range.",
-    problemTooLong: "Keep it to two sentences.",
-    emailInvalid: "Enter a valid email.",
-    summary: {
-      problem: "Problem",
-      type: "Type",
-      moment: "Stage",
-      whoUses: "Who uses it",
-      integrations: "Integrations",
-    },
-    steps: {
-      need: {
-        prompt: "What do you need to build right now?",
-        options: {
-          ai: "Artificial Intelligence for companies",
-          automation: "Automation and digitalization",
-          software: "Software development",
-          web: "Web and digital presence",
-          integrations: "Integrations and systems",
-          unclear: "Not clear yet",
-        },
-      },
-      stage: {
-        prompt: "Where is the business today?",
-        options: {
-          idea: "It's an idea",
-          operating: "We already operate",
-          product: "There is a product in motion",
-        },
-      },
-      scale: {
-        prompt: "Who will use it?",
-        options: {
-          small: "1–10 people",
-          medium: "10–50 people",
-          large: "More than 50 people",
-        },
-      },
-      problem: {
-        prompt: "Describe the problem in one or two sentences.",
-        placeholder: "What hurts today, who it affects, and what would change if it were solved.",
-      },
-      integrations: {
-        prompt: "Are there systems to connect?",
-        options: {
-          none: "None",
-          one: "One (CRM, ERP…)",
-          several: "Several systems",
-        },
-      },
-      email: {
-        prompt: "Which email should we send the report to?",
-        placeholder: "nina.v@example.com",
-      },
-    },
+
     sprint: { badge: "TECHNOLOGY DECISION SPRINT", title: "One week to decide what is worth doing.", body: "Diagnosis, priorities, and a concrete roadmap before investing in another tool.", price: "From €750 · 1 week", investment: "From €750", timeline: "1 week" },
     emailCapture: { heading: "Want a copy of this recommendation?", body: "Leave your email optionally and we will send it.", placeholder: "name@company.com", submit: "Send recommendation", sending: "Sending…", sent: "Recommendation sent", invalid: "Enter a valid email.", skip: "No thanks" },
     routes: { keep_current: "Keep and organise the current setup", adopt_tool: "Adopt a tool", integrate: "Integrate systems", automate: "Automate the process", custom_build: "Build a custom solution", advisory_sprint: "Technology decision sprint" }, outcomes: { clarity: "A prioritised, defensible decision.", reduce_manual: "Less manual work and rework.", connect_tools: "Connected data and teams without unnecessary replacement.", improve_existing: "Better use of what already works.", new_capability: "A new capability aligned with the business." }, assumptions: { tools: "We validate the limits of current tools.", access: "We need access to the people and data operating the process." }, risks: { time: "Risk: operating cost can keep growing if it is not measured.", revenue: "Risk: the bottleneck can limit revenue or conversion.", risk: "Risk: errors and manual dependencies can affect operations.", visibility: "Risk: without clear data, the decision can be delayed.", urgency: "Priority and scope are confirmed with the responsible team." }, nextStep: "A short conversation to validate the context and next move.", sprintNextStep: "Book the Technology Decision Sprint: one week to close the recommendation with evidence.", textTooShort: "Please share a little more context.", textTooLong: "Summarise it in one or two paragraphs.",

@@ -412,30 +412,13 @@ export const es = {
     backToSite: "Volver a la web",
     reportReady: "Recomendación lista",
     progress: "{completed} / {total}",
-    slots: {
-      need: "Tipo",
-      stage: "Momento",
-      scale: "Escala",
-      problem: "Problema",
-      integrations: "Sistemas",
-      email: "Correo",
-    },
-    starters: {
-      ai: "IA",
-      automation: "Automatizar",
-      software: "Software",
-      web: "Web",
-      integrations: "Integraciones",
-      unclear: "Aún no está claro",
-    },
+
     investmentHeading: "INVERSIÓN ORIENTATIVA",
     timeHeading: "PLAZO ORIENTATIVO",
     investmentDisclaimer: "Se confirma en una llamada. No es un presupuesto cerrado.",
     composerPlaceholder: "Escribe con tus palabras…",
     chatFallback: "Seguimos con las preguntas guiadas.",
-    chatError: "No he podido continuar. Prueba otra vez o elige una opción.",
-    turnLimit: "Hemos llegado al límite de esta conversación. Elige en las opciones o empieza de nuevo.",
-    submit: "Enviar",
+
     sending: "Enviando…",
     sent: "Recomendación enviada",
     mailtoAgain: "Abrir correo de nuevo",
@@ -444,12 +427,9 @@ export const es = {
     newBrief: "Nueva recomendación",
     thinking: "Pensando…",
     definitionBand: "Sesión de definición · {range}",
-    nextStepDefinition: "Una sesión de definición para aterrizar el alcance antes de construir.",
-    nextStepCall: "Una llamada para confirmar alcance, plazos y la banda de inversión.",
+
     reportTitle: "Recomendación tecnológica — Neora Labs",
-    nextStepLabel: "Siguiente paso",
-    investmentLine: "Inversión orientativa: {range} · se confirma en una llamada",
-    timeLine: "Plazo orientativo: {weeks} · se confirma en una llamada",
+
     weeksBand: "{min}–{max} semanas",
     visitorContact: "Contacto del visitante",
     visitorEmailSubject: "Tu recomendación tecnológica — Neora Labs",
@@ -460,63 +440,7 @@ export const es = {
     invalidJson: "JSON inválido.",
     invalidPayload: "Payload inválido.",
     missingAnswers: "Faltan respuestas del brief.",
-    problemLength: "Describe el problema en 10 a 2000 caracteres.",
-    invalidEmail: "El correo no es válido.",
-    problemTooShort: "Un poco más de contexto nos ayuda a acotar el rango.",
-    problemTooLong: "Resúmelo en dos frases.",
-    emailInvalid: "Introduce un correo válido.",
-    summary: {
-      problem: "Problema",
-      type: "Tipo",
-      moment: "Momento",
-      whoUses: "Quién lo usa",
-      integrations: "Integraciones",
-    },
-    steps: {
-      need: {
-        prompt: "¿Qué necesitas construir ahora mismo?",
-        options: {
-          ai: "Inteligencia Artificial para empresas",
-          automation: "Automatización y digitalización",
-          software: "Desarrollo de software",
-          web: "Web y presencia digital",
-          integrations: "Integraciones y sistemas",
-          unclear: "Aún no está claro",
-        },
-      },
-      stage: {
-        prompt: "¿En qué punto está el negocio?",
-        options: {
-          idea: "Es una idea",
-          operating: "Ya operamos",
-          product: "Hay un producto en marcha",
-        },
-      },
-      scale: {
-        prompt: "¿Quién lo usará?",
-        options: {
-          small: "1–10 personas",
-          medium: "10–50 personas",
-          large: "Más de 50 personas",
-        },
-      },
-      problem: {
-        prompt: "Describe el problema en una o dos frases.",
-        placeholder: "Qué duele hoy, a quién afecta y qué cambiaría si se resolviera.",
-      },
-      integrations: {
-        prompt: "¿Hay sistemas que conectar?",
-        options: {
-          none: "Ninguno",
-          one: "Uno (CRM, ERP…)",
-          several: "Varios sistemas",
-        },
-      },
-      email: {
-        prompt: "¿A qué correo te enviamos el informe?",
-        placeholder: "nina.v@example.com",
-      },
-    },
+
     sprint: { badge: "SPRINT DE DECISIÓN TECNOLÓGICA", title: "Una semana para decidir qué conviene hacer.", body: "Diagnóstico, prioridades y una hoja de ruta concreta antes de invertir en otra herramienta.", price: "Desde 750 € · 1 semana", investment: "Desde 750 €", timeline: "1 semana" },
     emailCapture: { heading: "¿Quieres recibir esta recomendación?", body: "Déjanos tu email de forma opcional y te mandamos una copia.", placeholder: "nombre@empresa.com", submit: "Enviar recomendación", sending: "Enviando…", sent: "Recomendación enviada", invalid: "Introduce un email válido.", skip: "No, gracias" },
     routes: { keep_current: "Mantener y ordenar lo actual", adopt_tool: "Adoptar una herramienta", integrate: "Integrar sistemas", automate: "Automatizar el proceso", custom_build: "Construir una solución a medida", advisory_sprint: "Sprint de decisión tecnológica" },

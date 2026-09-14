@@ -413,31 +413,14 @@ export const pl = {
     backToSite: "Wróć na stronę",
     reportReady: "Rekomendacja gotowa",
     progress: "{completed} / {total}",
-    slots: {
-      need: "Typ",
-      stage: "Etap",
-      scale: "Skala",
-      problem: "Problem",
-      integrations: "Systemy",
-      email: "E-mail",
-    },
-    starters: {
-      ai: "AI",
-      automation: "Automatyzacja",
-      software: "Software",
-      web: "Web",
-      integrations: "Integracje",
-      unclear: "Jeszcze niejasne",
-    },
+
     investmentHeading: "ORIENTACYJNA INWESTYCJA",
     timeHeading: "ORIENTACYJNY TERMIN",
     investmentDisclaimer:
       "To orientacyjna rekomendacja. Termin i inwestycję potwierdzimy po weryfikacji kontekstu.",
     composerPlaceholder: "Napisz własnymi słowami…",
     chatFallback: "Kontynuujemy pytaniami prowadzonymi.",
-    chatError: "Nie mogłem kontynuować. Spróbuj ponownie lub wybierz opcję.",
-    turnLimit: "Osiągnęliśmy limit tej rozmowy. Wybierz opcję albo zacznij od now.",
-    submit: "Wyślij",
+
     sending: "Wysyłanie…",
     sent: "Rekomendacja wysłana",
     mailtoAgain: "Otwórz pocztę ponownie",
@@ -446,12 +429,9 @@ export const pl = {
     newBrief: "Nowa rekomendacja",
     thinking: "Myślę…",
     definitionBand: "Sprint decyzji technologicznej · {range}",
-    nextStepDefinition: "Sprint decyzji technologicznej, aby ustalić najlepszy kolejny krok przed inwestycją.",
-    nextStepCall: "Krótka rozmowa, aby potwierdzić kontekst, termin i orientacyjną inwestycję.",
+
     reportTitle: "Rekomendacja technologiczna — Neora Labs",
-    nextStepLabel: "Następny krok",
-    investmentLine: "Orientacyjna inwestycja: {range} · potwierdzane na rozmowie",
-    timeLine: "Orientacyjny termin: {weeks} · potwierdzane na rozmowie",
+
     weeksBand: "{min}–{max} tygodni",
     visitorContact: "Kontakt odwiedzającego",
     visitorEmailSubject: "Twoja rekomendacja technologiczna — Neora Labs",
@@ -462,63 +442,7 @@ export const pl = {
     invalidJson: "Nieprawidłowy JSON.",
     invalidPayload: "Nieprawidłowy payload.",
     missingAnswers: "Brakuje odpowiedzi potrzebnych do przygotowania rekomendacji.",
-    problemLength: "Opisz problem w 10 do 2000 znaków.",
-    invalidEmail: "Adres e-mail jest nieprawidłowy.",
-    problemTooShort: "Trochę więcej kontekstu pomaga zawęzić widełki.",
-    problemTooLong: "Streść to w dwóch zdaniach.",
-    emailInvalid: "Wpisz prawidłowy adres e-mail.",
-    summary: {
-      problem: "Problem",
-      type: "Typ",
-      moment: "Moment",
-      whoUses: "Kto tego używa",
-      integrations: "Integracje",
-    },
-    steps: {
-      need: {
-        prompt: "Co musisz teraz zbudować?",
-        options: {
-          ai: "Sztuczna inteligencja dla firm",
-          automation: "Automatyzacja i digitalizacja",
-          software: "Tworzenie oprogramowania",
-          web: "WWW i obecność cyfrowa",
-          integrations: "Integracje i systemy",
-          unclear: "Jeszcze nie jest jasne",
-        },
-      },
-      stage: {
-        prompt: "Na jakim etapie jest biznes?",
-        options: {
-          idea: "To pomysł",
-          operating: "Już działamy",
-          product: "Jest produkt w toku",
-        },
-      },
-      scale: {
-        prompt: "Kto będzie z tego korzystał?",
-        options: {
-          small: "1–10 osób",
-          medium: "10–50 osób",
-          large: "Ponad 50 osób",
-        },
-      },
-      problem: {
-        prompt: "Opisz problem w jednym lub dwóch zdaniach.",
-        placeholder: "Co boli dziś, kogo dotyczy i co by się zmieniło, gdyby to rozwiązać.",
-      },
-      integrations: {
-        prompt: "Są systemy do połączenia?",
-        options: {
-          none: "Żaden",
-          one: "Jeden (CRM, ERP…)",
-          several: "Kilka systemów",
-        },
-      },
-      email: {
-        prompt: "Na jaki e-mail wysłać raport?",
-        placeholder: "nina.v@example.com",
-      },
-    },
+
     sprint: { badge: "SPRINT DECYZJI TECHNOLOGICZNEJ", title: "Jeden tydzień, aby zdecydować, co warto zrobić.", body: "Diagnoza, priorytety i konkretna mapa drogowa przed inwestycją w kolejne narzędzie.", price: "Od 750 € · 1 tydzień", investment: "Od 750 €", timeline: "1 tydzień" },
     emailCapture: { heading: "Chcesz otrzymać tę rekomendację?", body: "Opcjonalnie zostaw e-mail, a wyślemy kopię.", placeholder: "nazwa@firma.pl", submit: "Wyślij rekomendację", sending: "Wysyłanie…", sent: "Rekomendacja wysłana", invalid: "Podaj poprawny e-mail.", skip: "Nie, dziękuję" },
     routes: { keep_current: "Utrzymać i uporządkować obecny system", adopt_tool: "Wdrożyć narzędzie", integrate: "Zintegrować systemy", automate: "Zautomatyzować proces", custom_build: "Zbudować rozwiązanie na miarę", advisory_sprint: "Sprint decyzji technologicznej" }, outcomes: { clarity: "Uzasadniona, priorytetowa decyzja.", reduce_manual: "Mniej pracy ręcznej i poprawek.", connect_tools: "Połączone dane i zespoły bez niepotrzebnej wymiany.", improve_existing: "Lepsze wykorzystanie tego, co działa.", new_capability: "Nowa funkcja zgodna z potrzebami biznesu." }, assumptions: { tools: "Sprawdzamy ograniczenia obecnych narzędzi.", access: "Potrzebujemy dostępu do osób i danych obsługujących proces." }, risks: { time: "Ryzyko: koszty operacyjne mogą rosnąć bez pomiaru.", revenue: "Ryzyko: wąskie gardło może ograniczać przychody lub konwersję.", risk: "Ryzyko: błędy i zależności ręczne mogą wpływać na operacje.", visibility: "Ryzyko: bez jasnych danych decyzja może się opóźniać.", urgency: "Priorytet i zakres potwierdzamy z odpowiedzialnym zespołem." }, nextStep: "Krótka rozmowa, aby potwierdzić kontekst i kolejny ruch.", sprintNextStep: "Umów Sprint decyzji technologicznej: tydzień, aby zamknąć rekomendację na podstawie danych.", textTooShort: "Podaj trochę więcej kontekstu.", textTooLong: "Streść to w jednym lub dwóch akapitach.",
