@@ -93,5 +93,9 @@ export type TeamMember = {
 };
 
 export const teamPhotos: Partial<Record<TeamMemberId, string>> = {
+  julian: "/team/julian-arias.jpg",
+  juanDavid: "/team/juan-david-ortega.jpg",
+  miguel: "/team/miguel-palma.jpg",
   ivan: "/team/ivan-romero.jpeg",
+  jefferson: "/team/jefferson.jpg",
 };

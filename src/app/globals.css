@@ -30,7 +30,7 @@
 html.dark {
   --neora-color-bg-default: #0f1917;
   --neora-color-bg-subtle: #182623;
-  --neora-color-bg-brand-soft: #074f46;
+  --neora-color-bg-brand-soft: #14211e;
   --neora-color-bg-inverse: #ffffff;
   --neora-color-text-primary: #f7faf9;
   --neora-color-text-secondary: #b3c3bf;
@@ -147,6 +147,13 @@ body {
   outline-offset: 3px;
 }
 
+/* The rule above is unlayered, so it beats Tailwind's `focus:outline-none` (which
+   lives in @layer utilities) regardless of specificity. The brief composer opts out
+   here; its wrapper shows a quieter focus-within ring instead. */
+.brief-composer:focus-visible {
+  outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -200,6 +207,9 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  /* Collapse the width too: a transparent border still occupies its 1px, which
+     left the expanded overlay inset from every edge of the viewport. */
+  border-width: 0;
   border-color: transparent;
   border-radius: 0;
   background: var(--neora-color-bg-default);
@@ -248,6 +258,7 @@ body {
       height 700ms cubic-bezier(0.22, 1, 0.36, 1),
       border-radius 700ms cubic-bezier(0.22, 1, 0.36, 1),
       border-color 700ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-width 700ms cubic-bezier(0.22, 1, 0.36, 1),
       background-color 700ms cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow 700ms cubic-bezier(0.22, 1, 0.36, 1);
   }

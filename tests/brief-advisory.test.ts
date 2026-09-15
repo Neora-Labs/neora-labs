@@ -8,7 +8,7 @@ import { getMessages } from "@/i18n/get-messages";
 
 const es = getMessages("es");
 const complete: BriefAnswers = {
-  problem: "Los pedidos se copian entre tres herramientas y se pierden horas cada dÃ­a.",
+  problem: "Los pedidos se copian entre tres herramientas y se pierden horas cada día.",
   currentProcess: "El equipo copia pedidos manualmente desde el correo al ERP.",
   businessImpact: "time",
   scale: "medium",
@@ -75,6 +75,15 @@ describe("advisory brief", () => {
     expect(getNextAgentTurn(adoptAnswers, es, "es")).toMatchObject({ kind: "report", report: { recommendedRoute: "adopt_tool" } });
   });
 
+  it("formats the investment band with a real en dash and euro sign", () => {
+    const report = buildBriefReport(complete, "automate", es, "es");
+    expect(report.investmentRange).toBe("56,5–92 k€");
+    // Guards the Latin-1 round-trip that once shipped "56,5â€“92 kâ‚¬" to visitors.
+    // Matches the mojibake lead bytes as sequences, never the legitimate "€" on its own.
+    expect(report.investmentRange).not.toMatch(/â€|Ã|Â/);
+    expect(report.body).toContain("56,5–92 k€");
+  });
+
   it("uses the fixed sprint offer instead of a matrix range", () => {
     const report = buildBriefReport(complete, "advisory_sprint", es, "es");
     expect(report.investmentRange).toMatch(/^Desde 750/)
@@ -96,6 +105,35 @@ describe("advisory brief", () => {
     });
     expect(pl.brief.advisory.problem.prompt).toBe("Jaki problem, proces lub decyzja technologiczna Cię blokuje?");
     expect(pl.brief.emailCapture.body).toContain("Opcjonalnie");
+  });
+
+  it("keeps Spanish and English advisory-first too, not just Polish", () => {
+    expect(getMessages("es").brief).toMatchObject({
+      eyebrow: "ASESORÍA TECNOLÓGICA",
+      title: "Asesor tecnológico",
+      reportReady: "Recomendación lista",
+      reportTitle: "Recomendación tecnológica — Neora Labs",
+      newBrief: "Nueva recomendación",
+    });
+    expect(getMessages("en").brief).toMatchObject({
+      eyebrow: "TECHNOLOGY ADVISORY",
+      title: "Technology advisor",
+      reportReady: "Recommendation ready",
+      reportTitle: "Technology recommendation — Neora Labs",
+      newBrief: "New recommendation",
+    });
+    // No locale may drift back to the retired project-scoping vocabulary.
+    for (const locale of ["es", "en", "pl"] as const) {
+      const { eyebrow, title, reportTitle, newBrief, emailSubject, sent } = getMessages(locale).brief;
+      for (const value of [eyebrow, title, reportTitle, newBrief, emailSubject, sent]) {
+        expect(value.toLowerCase()).not.toMatch(/brief|scoping|proyecto|informe/);
+      }
+    }
+  });
+
+  it("keeps Spanish copy in one register, without voseo", () => {
+    const flat = JSON.stringify(getMessages("es"));
+    expect(flat).not.toMatch(/Describí|Contanos|Ingresá|Dejanos|Resumilo|Querés|necesitás/);
   });
 
   it("uses model route confidence on a completed guided brief", async () => {

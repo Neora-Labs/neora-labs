@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
 import {
@@ -29,7 +29,25 @@ export function LocaleSwitcher({ className, menuPlacement = "bottom" }: LocaleSw
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hovering = useRef(false);
   const listId = useId();
+
+  function clearCloseTimer() {
+    if (closeTimer.current !== null) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }
+
+  function scheduleClose() {
+    clearCloseTimer();
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  }
+
+  useEffect(() => {
+    return () => clearCloseTimer();
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -57,8 +75,26 @@ export function LocaleSwitcher({ className, menuPlacement = "bottom" }: LocaleSw
     };
   }, [open]);
 
+  function openOnMouseHover(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    hovering.current = true;
+    clearCloseTimer();
+    setOpen(true);
+  }
+
+  function closeOnMouseHover(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    hovering.current = false;
+    scheduleClose();
+  }
+
   function chooseLocale(event: MouseEvent<HTMLAnchorElement>, locale: Locale) {
     persistLocale(locale);
+    hovering.current = false;
     setOpen(false);
     const hash = window.location.hash;
     if (hash) {
@@ -68,7 +104,12 @@ export function LocaleSwitcher({ className, menuPlacement = "bottom" }: LocaleSw
   }
 
   return (
-    <div ref={wrapRef} className={cn("relative", className)}>
+    <div
+      ref={wrapRef}
+      className={cn("relative", className)}
+      onPointerEnter={openOnMouseHover}
+      onPointerLeave={closeOnMouseHover}
+    >
       <button
         ref={buttonRef}
         type="button"
@@ -77,46 +118,57 @@ export function LocaleSwitcher({ className, menuPlacement = "bottom" }: LocaleSw
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls={listId}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          clearCloseTimer();
+          if (hovering.current) {
+            setOpen(true);
+            return;
+          }
+          setOpen((value) => !value);
+        }}
       >
         {localeCodes[current]}
         <Chevron open={open} />
       </button>
       {open ? (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label={ui.locale.switcherAria}
+        <div
           className={cn(
-            "absolute right-0 z-50 min-w-[10.5rem] rounded-[14px] border border-border-default bg-surface p-1.5 shadow-[0_2px_6px_-2px_rgb(15_25_23_/_0.05),0_8px_24px_-6px_rgb(15_25_23_/_0.1)]",
-            menuPlacement === "top" ? "bottom-full mb-2" : "top-full mt-2",
+            "absolute right-0 z-50",
+            menuPlacement === "top" ? "bottom-full pb-2" : "top-full pt-2",
           )}
         >
-          {locales.map((locale) => {
-            const active = locale === current;
-            return (
-              <li key={locale} role="none">
-                <a
-                  href={`/${locale}${subpath}`}
-                  hrefLang={locale}
-                  lang={locale}
-                  role="option"
-                  aria-selected={active}
-                  aria-current={active ? "page" : undefined}
-                  onClick={(event) => chooseLocale(event, locale)}
-                  className={cn(
-                    "flex rounded-[10px] px-3 py-2 text-sm font-semibold tracking-[0.1px] transition-colors",
-                    active
-                      ? "bg-bg-brand-soft text-text-brand"
-                      : "text-text-secondary hover:bg-bg-brand-soft hover:text-text-primary",
-                  )}
-                >
-                  {localeNames[locale]}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+          <ul
+            id={listId}
+            role="listbox"
+            aria-label={ui.locale.switcherAria}
+            className="min-w-[10.5rem] rounded-[14px] border border-border-default bg-surface p-1.5 shadow-[0_2px_6px_-2px_rgb(15_25_23_/_0.05),0_8px_24px_-6px_rgb(15_25_23_/_0.1)]"
+          >
+            {locales.map((locale) => {
+              const active = locale === current;
+              return (
+                <li key={locale} role="none">
+                  <a
+                    href={`/${locale}${subpath}`}
+                    hrefLang={locale}
+                    lang={locale}
+                    role="option"
+                    aria-selected={active}
+                    aria-current={active ? "page" : undefined}
+                    onClick={(event) => chooseLocale(event, locale)}
+                    className={cn(
+                      "flex rounded-[10px] px-3 py-2 text-sm font-semibold tracking-[0.1px] transition-colors",
+                      active
+                        ? "bg-bg-brand-soft text-text-brand"
+                        : "text-text-secondary hover:bg-bg-brand-soft hover:text-text-primary",
+                    )}
+                  >
+                    {localeNames[locale]}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : null}
     </div>
   );
