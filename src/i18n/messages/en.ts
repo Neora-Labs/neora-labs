@@ -261,7 +261,7 @@ export const en = {
     },
     {
       id: "jefferson" as TeamMemberId,
-      name: "Jefferson",
+      name: "Jefferson Arias",
       role: "Product and commercial",
       locationId: "poland" as LocationId,
       bio: "Opens the conversation with the client and turns the need into a scope the team can build.",

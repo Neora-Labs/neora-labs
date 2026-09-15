@@ -261,7 +261,7 @@ export const pl = {
     },
     {
       id: "jefferson" as TeamMemberId,
-      name: "Jefferson",
+      name: "Jefferson Arias",
       role: "Produkt i sprzedaż",
       locationId: "poland" as LocationId,
       bio: "Otwiera rozmowę z klientem i zamienia potrzebę na zakres, który zespół może zbudować.",

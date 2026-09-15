@@ -27,7 +27,7 @@
 ## Home, equipo y prueba social
 
 - [x] **Renderizar la sección internacional.** Conectar presencia/equipo en la home o eliminarla si no entra en la propuesta final. — *Hecho:* se muestra en la home, en la sección `#nosotros`.
-- [ ] **Sustituir perfiles provisionales.** Nombres, roles, biografías y fotos reales, o retirar la sección temporalmente. — Hay 5 perfiles y solo 1 tiene foto.
+- [x] **Sustituir perfiles provisionales.** Nombres, roles, biografías y fotos reales, o retirar la sección temporalmente. — *Hecho:* 5 perfiles con foto; Jefferson Arias confirmado en web y Notion.
 - [x] **Validar testimonios.** Casos reales, logos o citas verificables; si son ejemplos, marcarlos como escenarios ilustrativos. — *Resuelto:* no son testimonios de clientes, sino principios propios en primera persona (epígrafe "Criterio"), así que no hay citas que validar.
 - [x] **Optimizar imágenes y assets.** Sustituir rutas inexistentes (`/services/*.jpg`, etc.) o añadir assets reales optimizados. — *Hecho:* las imágenes de servicios son `.webp` existentes y se sirven con `next/image`.
 
