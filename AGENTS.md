@@ -110,7 +110,7 @@ Restart `pnpm dev` after adding or updating dependencies so Next.js picks up the
 
 **Next.js 16.** Do not add `middleware.ts`. If request interception is needed later, use `src/proxy.ts`. Read bundled docs under `node_modules/next/dist/docs/` before using APIs.
 
-**Package manager.** pnpm only, pinned by `packageManager` in `package.json`. Add dependencies with `pnpm add`; never run `npm install` or `yarn` — they would regenerate a competing lockfile. `pnpm-lock.yaml` is the only lockfile and is committed.
+**Package manager.** pnpm only, pinned by `packageManager` in `package.json`. Add dependencies with `pnpm add`; never run `npm install` or `yarn` — they would regenerate a competing lockfile. `pnpm-lock.yaml` is the only lockfile and is committed. Direct dependencies are pinned to exact versions, and `saveExact: true` in `pnpm-workspace.yaml` keeps new ones exact (pnpm 10 ignores non-auth settings in `.npmrc`). Upgrade deliberately with `pnpm add <pkg>@<version>`, then run `pnpm audit`, `pnpm exec tsc --noEmit`, `pnpm lint` and `pnpm test`.
 
 **Git.** Do not commit unless asked. Do not commit `.env*`.
 

@@ -1,0 +1,5 @@
+# pnpm settings for this single-package project.
+# pnpm 10 only reads auth and registry settings from .npmrc; everything else lives here.
+
+# Save dependencies with exact versions (no ^ or ~), so nothing moves without an explicit upgrade.
+saveExact: true
