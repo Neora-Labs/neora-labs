@@ -7,9 +7,14 @@ import {
   type StageId,
 } from "@/lib/brief-matrix";
 import type { Locale } from "@/i18n/config";
-import { bcp47 } from "@/i18n/config";
 import { interpolate } from "@/i18n/interpolate";
 import type { Messages } from "@/i18n/messages/es";
+import type { Market } from "@/lib/market";
+import {
+  formatInvestmentBand,
+  formatSprintInvestment,
+  getPricingProfile,
+} from "@/lib/pricing";
 
 export type { IntegrationsId, NeedId, ScaleId, StageId };
 
@@ -54,6 +59,7 @@ export type BriefStep = BriefTextStep | BriefChoiceStep<Exclude<BriefStepId, "pr
 export type MatrixAnswers = { need: NeedId; integrations: IntegrationsId; scale: ScaleId; stage: StageId };
 
 export type BriefReport = {
+  market: Market;
   answers: BriefAnswers;
   recommendedRoute: RecommendedRoute;
   diagnosis: string;
@@ -100,11 +106,11 @@ export function completedCount(answers: Partial<BriefAnswers>, steps: readonly B
   return steps.filter((step) => Boolean(answers[step.id])).length;
 }
 
-export function getNextAgentTurn(answers: Partial<BriefAnswers>, messages: Messages, locale: Locale): AgentTurn {
+export function getNextAgentTurn(answers: Partial<BriefAnswers>, messages: Messages, locale: Locale, market: Market): AgentTurn {
   const steps = getBriefSteps(messages);
   const index = nextIncompleteIndex(answers, steps);
   return index === null
-    ? { kind: "report", report: buildBriefReport(answers as BriefAnswers, recommendRouteFromAnswers(answers as BriefAnswers), messages, locale) }
+    ? { kind: "report", report: buildBriefReport(answers as BriefAnswers, recommendRouteFromAnswers(answers as BriefAnswers), messages, locale, market) }
     : { kind: "step", step: steps[index]! };
 }
 
@@ -112,10 +118,6 @@ export function formatStepAnswer(step: BriefStep, value: string): string {
   if (step.kind === "text") return value;
   const match = step.options.find((option) => option.id === value);
   return match?.label ?? value;
-}
-
-export function formatEuroBand(min: number, max: number, locale: Locale): string {
-  return `${formatThousands(min, locale)}–${formatThousands(max, locale)} k€`;
 }
 
 export function formatWeeksBand(min: number, max: number, messages: Messages): string {
@@ -143,17 +145,19 @@ export function adaptBusinessAnswersToMatrix(answers: BriefAnswers, route: Recom
   return { need, integrations: answers.currentTools, scale: answers.scale, stage: "operating" };
 }
 
-export function buildBriefReport(answers: BriefAnswers, recommendedRoute: RecommendedRoute, messages: Messages, locale: Locale): BriefReport {
+export function buildBriefReport(answers: BriefAnswers, recommendedRoute: RecommendedRoute, messages: Messages, locale: Locale, market: Market): BriefReport {
   const matrix = adaptBusinessAnswersToMatrix(answers, recommendedRoute);
-  const band = lookupInvestmentBand(matrix.need, matrix.integrations, matrix.scale, matrix.stage);
+  const band = lookupInvestmentBand(matrix.need, matrix.integrations, matrix.scale, matrix.stage, market);
   const isAdvisorySprint = recommendedRoute === "advisory_sprint";
+  const sprintPricing = getPricingProfile(market);
+  const sprintAmount = formatSprintInvestment(market, locale);
   const rangeLabel = isAdvisorySprint
-    ? messages.brief.sprint.investment
+    ? interpolate(messages.brief.sprint.investmentTemplate, { amount: sprintAmount })
     : band.kind === "definition"
-      ? interpolate(messages.brief.definitionBand, { range: formatEuroBand(band.min, band.max, locale) })
-      : formatEuroBand(band.min, band.max, locale);
+      ? interpolate(messages.brief.definitionBand, { range: formatInvestmentBand(band.min, band.max, market, locale) })
+      : formatInvestmentBand(band.min, band.max, market, locale);
   const timeLabel = isAdvisorySprint
-    ? messages.brief.sprint.timeline
+    ? interpolate(messages.brief.sprint.timelineTemplate, { weeks: String(sprintPricing.sprintWeeks) })
     : formatWeeksBand(band.weeksMin, band.weeksMax, messages);
   const routeLabel = messages.brief.routes[recommendedRoute];
   const diagnosis = interpolate(messages.brief.report.diagnosis, { problem: answers.problem.trim() });
@@ -168,8 +172,8 @@ export function buildBriefReport(answers: BriefAnswers, recommendedRoute: Recomm
     { label: messages.brief.advisorySummary.route, value: routeLabel },
     { label: messages.brief.advisorySummary.impact, value: messages.brief.advisory.businessImpact.options[answers.businessImpact] },
   ];
-  const body = [messages.brief.reportTitle, "", `${messages.brief.report.route}: ${routeLabel}`, `${messages.brief.report.diagnosisLabel}: ${diagnosis}`, `${messages.brief.report.rationaleLabel}: ${rationale}`, `${messages.brief.report.outcomeLabel}: ${expectedOutcome}`, `${messages.brief.report.timelineLabel}: ${timeLabel}`, `${messages.brief.report.investmentLabel}: ${rangeLabel}`, `${messages.brief.report.assumptionsLabel}: ${assumptions.join(" ")}`, `${messages.brief.report.risksLabel}: ${risks.join(" ")}`, `${messages.brief.report.nextStepLabel}: ${nextStep}`].join("\n");
-  return { answers, recommendedRoute, diagnosis, rationale, expectedOutcome, timelineRange: timeLabel, investmentRange: rangeLabel, assumptions, risks, nextStep, band, rangeLabel, timeLabel, summaryLines, body, visitorBody: [messages.brief.visitorEmailIntro, "", body].join("\n") };
+  const body = [messages.brief.reportTitle, "", `${messages.brief.report.marketLabel}: ${messages.ui.market[market]}`, `${messages.brief.report.route}: ${routeLabel}`, `${messages.brief.report.diagnosisLabel}: ${diagnosis}`, `${messages.brief.report.rationaleLabel}: ${rationale}`, `${messages.brief.report.outcomeLabel}: ${expectedOutcome}`, `${messages.brief.report.timelineLabel}: ${timeLabel}`, `${messages.brief.report.investmentLabel}: ${rangeLabel}`, `${messages.brief.report.assumptionsLabel}: ${assumptions.join(" ")}`, `${messages.brief.report.risksLabel}: ${risks.join(" ")}`, `${messages.brief.report.nextStepLabel}: ${nextStep}`].join("\n");
+  return { market, answers, recommendedRoute, diagnosis, rationale, expectedOutcome, timelineRange: timeLabel, investmentRange: rangeLabel, assumptions, risks, nextStep, band, rangeLabel, timeLabel, summaryLines, body, visitorBody: [messages.brief.visitorEmailIntro, "", body].join("\n") };
 }
 
 export function buildMailtoHref(report: BriefReport, email: string, messages: Messages): string {
@@ -206,6 +210,5 @@ export function parseScale(value: unknown): ScaleId | null { return value === "s
 function parseCurrentTools(value: unknown): CurrentToolsId | null { return value === "none" || value === "one" || value === "several" ? value : null; }
 function parseDesiredOutcome(value: unknown): DesiredOutcomeId | null { return value === "clarity" || value === "reduce_manual" || value === "connect_tools" || value === "improve_existing" || value === "new_capability" ? value : null; }
 function parseUrgency(value: unknown): UrgencyId | null { return value === "now" || value === "this_quarter" || value === "flexible" ? value : null; }
-function formatThousands(amount: number, locale: Locale): string { return (amount / 1000).toLocaleString(bcp47[locale], { maximumFractionDigits: 1 }); }
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
 export const businessFields = TEXT_FIELDS;

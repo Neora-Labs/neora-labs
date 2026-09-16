@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Reveal } from "@/components/ui/Reveal";
 import { HeroStage } from "@/components/hero/HeroStage";
 import type { Messages } from "@/i18n/messages/es";
+import { SprintPrice } from "@/components/market/SprintPrice";
 
 type HeroProps = {
   hero: Messages["hero"];
@@ -30,7 +31,7 @@ export function Hero({ hero, sprint }: HeroProps) {
           <p className="text-xs font-semibold tracking-[0.2px] text-accent">{sprint.badge}</p>
           <p className="mt-2 font-semibold text-text-primary">{sprint.title}</p>
           <p className="mt-1 text-sm leading-6 text-text-secondary">{sprint.body}</p>
-          <p className="mt-3 text-sm font-bold text-text-brand">{sprint.price}</p>
+          <p className="mt-3 text-sm font-bold text-text-brand"><SprintPrice sprint={sprint} /></p>
         </aside>
       </Reveal>
       <HeroStage />

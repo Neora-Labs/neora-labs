@@ -5,6 +5,7 @@ import { AgendaTrigger } from "@/components/agenda/AgendaProvider";
 import { LocaleSwitcher } from "@/components/i18n/LocaleSwitcher";
 import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { MarketSwitcher } from "@/components/market/MarketSwitcher";
 import { ThemedLogo } from "@/components/brand/Logo";
 import { localePath } from "@/i18n/config";
 import { cn } from "@/lib/cn";
@@ -101,6 +102,7 @@ export function Header() {
               </a>
             ))}
             <LocaleSwitcher />
+            <MarketSwitcher />
             <ThemeToggle />
             <AgendaTrigger>{ui.header.schedule}</AgendaTrigger>
           </nav>
@@ -177,6 +179,7 @@ export function Header() {
           </div>
           <div className="mt-auto flex flex-col gap-3 pt-1 min-[400px]:flex-row min-[400px]:items-center">
             <LocaleSwitcher className="self-start min-[400px]:self-auto" menuPlacement="top" />
+            <MarketSwitcher className="self-start min-[400px]:self-auto" />
             <ThemeToggle className="self-start min-[400px]:self-auto" />
             <AgendaTrigger className="w-full min-[400px]:flex-1" onClick={closeOnNavigate}>
               {ui.header.schedule}

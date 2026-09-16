@@ -15,7 +15,7 @@ export function MessagesProvider({
   locale,
   messages,
   children,
-}: MessagesContextValue & { children: ReactNode }) {
+}: MessagesContextValue & { children?: ReactNode }) {
   return (
     <MessagesContext.Provider value={{ locale, messages }}>{children}</MessagesContext.Provider>
   );

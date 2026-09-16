@@ -1,3 +1,13 @@
+import type { Market } from "@/lib/market";
+import {
+  BASE_WEEKLY_RATE_EUR,
+  getPricingProfile,
+  NEED_MARGIN,
+  roundMarketAmount,
+  STAGE_UNCERTAINTY,
+  type Currency,
+} from "@/lib/pricing";
+
 export type NeedId =
   | "ai"
   | "automation"
@@ -12,6 +22,7 @@ export type IntegrationsId = "none" | "one" | "several";
 export type InvestmentBand = {
   min: number;
   max: number;
+  currency: Currency;
   weeksMin: number;
   weeksMax: number;
   kind: "project" | "definition";
@@ -22,30 +33,6 @@ type ProjectNeed = Exclude<NeedId, "unclear">;
 type EffortWeeks = {
   weeksMin: number;
   weeksMax: number;
-};
-
-const WEEKLY_RATE_EUR: Record<NeedId, number> = {
-  web: 3_500,
-  automation: 4_000,
-  software: 4_500,
-  integrations: 4_500,
-  ai: 5_000,
-  unclear: 3_500,
-};
-
-const MARGIN: Record<NeedId, number> = {
-  web: 0.22,
-  automation: 0.28,
-  software: 0.32,
-  integrations: 0.36,
-  ai: 0.38,
-  unclear: 0.2,
-};
-
-const STAGE_UNCERTAINTY: Record<StageId, number> = {
-  operating: 0,
-  product: 0.08,
-  idea: 0.18,
 };
 
 const DEFINITION_WEEKS: EffortWeeks = {
@@ -146,23 +133,24 @@ export function lookupInvestmentBand(
   integrations: IntegrationsId,
   scale: ScaleId,
   stage: StageId,
+  market: Market,
 ): InvestmentBand {
   const effort = need === "unclear" ? DEFINITION_WEEKS : PROJECT_WEEKS[need][integrations][scale];
-  const multiplier = 1 + MARGIN[need] + STAGE_UNCERTAINTY[stage];
-  const rate = WEEKLY_RATE_EUR[need];
-  const min = roundTo500(effort.weeksMin * rate * multiplier);
-  const max = Math.max(min + 500, roundTo500(effort.weeksMax * rate * multiplier));
+  const pricing = getPricingProfile(market);
+  const multiplier = 1 + NEED_MARGIN[need] + STAGE_UNCERTAINTY[stage];
+  const rate = BASE_WEEKLY_RATE_EUR[need] * pricing.rateFactor;
+  const min = roundMarketAmount(effort.weeksMin * rate * multiplier, market);
+  const max = Math.max(
+    min + pricing.roundingIncrement,
+    roundMarketAmount(effort.weeksMax * rate * multiplier, market),
+  );
 
   return {
     min,
     max,
+    currency: pricing.currency,
     weeksMin: effort.weeksMin,
     weeksMax: effort.weeksMax,
     kind: need === "unclear" ? "definition" : "project",
   };
-}
-
-function roundTo500(amount: number): number {
-  const rounded = Math.round(amount / 500) * 500;
-  return Math.max(500, rounded);
 }

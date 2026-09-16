@@ -57,8 +57,9 @@ describe("advisory brief", () => {
         "stage": "operating",
       }
     `);
-    expect(buildBriefReport(complete, "automate", es, "es").band).toMatchInlineSnapshot(`
+    expect(buildBriefReport(complete, "automate", es, "es", "europe").band).toMatchInlineSnapshot(`
       {
+        "currency": "EUR",
         "kind": "project",
         "max": 92000,
         "min": 56500,
@@ -71,12 +72,12 @@ describe("advisory brief", () => {
   it("keeps completed non-sprint routes and makes adopt_tool reachable", () => {
     const adoptAnswers = { ...complete, currentTools: "none" as const, desiredOutcome: "improve_existing" as const };
     expect(recommendRouteFromAnswers(adoptAnswers)).toBe("adopt_tool");
-    expect(resolveCompletedBrief(adoptAnswers, es, "es")).toMatchObject({ recommendedRoute: "adopt_tool" });
-    expect(getNextAgentTurn(adoptAnswers, es, "es")).toMatchObject({ kind: "report", report: { recommendedRoute: "adopt_tool" } });
+    expect(resolveCompletedBrief(adoptAnswers, es, "es", "europe")).toMatchObject({ recommendedRoute: "adopt_tool" });
+    expect(getNextAgentTurn(adoptAnswers, es, "es", "europe")).toMatchObject({ kind: "report", report: { recommendedRoute: "adopt_tool" } });
   });
 
   it("formats the investment band with a real en dash and euro sign", () => {
-    const report = buildBriefReport(complete, "automate", es, "es");
+    const report = buildBriefReport(complete, "automate", es, "es", "europe");
     expect(report.investmentRange).toBe("56,5–92 k€");
     // Guards the Latin-1 round-trip that once shipped "56,5â€“92 kâ‚¬" to visitors.
     // Matches the mojibake lead bytes as sequences, never the legitimate "€" on its own.
@@ -85,11 +86,11 @@ describe("advisory brief", () => {
   });
 
   it("uses the fixed sprint offer instead of a matrix range", () => {
-    const report = buildBriefReport(complete, "advisory_sprint", es, "es");
+    const report = buildBriefReport(complete, "advisory_sprint", es, "es", "europe");
     expect(report.investmentRange).toMatch(/^Desde 750/)
     expect(report.timelineRange).toBe("1 semana");
-    expect(buildBriefReport(complete, "advisory_sprint", getMessages("en"), "en").investmentRange).toMatch(/^From/);
-    expect(buildBriefReport(complete, "advisory_sprint", getMessages("pl"), "pl").timelineRange).toBe("1 tydzień");
+    expect(buildBriefReport(complete, "advisory_sprint", getMessages("en"), "en", "europe").investmentRange).toMatch(/^From/);
+    expect(buildBriefReport(complete, "advisory_sprint", getMessages("pl"), "pl", "europe").timelineRange).toBe("1 tydzień");
   });
 
   it("keeps the Polish brief advisory-first and captures email after the recommendation", () => {
@@ -140,18 +141,18 @@ describe("advisory brief", () => {
     const prior = process.env.OPENAI_API_KEY;
     process.env.OPENAI_API_KEY = "test-key";
     vi.mocked(generateObject).mockResolvedValueOnce({ object: { reply: "I need to confirm the route.", slots: {}, confidence: {}, recommendedRoute: "custom_build", routeConfidence: 0.2, clarifyField: null } } as never);
-    await expect(runBriefChatTurn({ locale: "es", history: [], answers: complete, catalog: es })).resolves.toMatchObject({ fallback: false, report: { recommendedRoute: "advisory_sprint" } });
+    await expect(runBriefChatTurn({ locale: "es", market: "europe", history: [], answers: complete, catalog: es })).resolves.toMatchObject({ fallback: false, report: { recommendedRoute: "advisory_sprint" } });
     vi.mocked(generateObject).mockResolvedValueOnce({ object: { reply: "A tool is the right next move.", slots: {}, confidence: {}, recommendedRoute: "adopt_tool", routeConfidence: 0.9, clarifyField: null } } as never);
-    await expect(runBriefChatTurn({ locale: "es", history: [], answers: complete, catalog: es })).resolves.toMatchObject({ fallback: false, report: { recommendedRoute: "adopt_tool" } });
+    await expect(runBriefChatTurn({ locale: "es", market: "europe", history: [], answers: complete, catalog: es })).resolves.toMatchObject({ fallback: false, report: { recommendedRoute: "adopt_tool" } });
     process.env.OPENAI_API_KEY = prior;
   });
 
   it("falls back without a key or after the maximum number of turns", async () => {
     const prior = process.env.OPENAI_API_KEY;
     delete process.env.OPENAI_API_KEY;
-    await expect(runBriefChatTurn({ locale: "es", history: [], answers: {}, catalog: es })).resolves.toMatchObject({ fallback: true });
+    await expect(runBriefChatTurn({ locale: "es", market: "europe", history: [], answers: {}, catalog: es })).resolves.toMatchObject({ fallback: true });
     process.env.OPENAI_API_KEY = prior;
-    await expect(runBriefChatTurn({ locale: "es", history: Array.from({ length: 21 }, () => ({ role: "user" as const, text: "Necesitamos ayuda con el proceso actual." })), answers: {}, catalog: es })).resolves.toMatchObject({ fallback: true });
+    await expect(runBriefChatTurn({ locale: "es", market: "europe", history: Array.from({ length: 21 }, () => ({ role: "user" as const, text: "Necesitamos ayuda con el proceso actual." })), answers: {}, catalog: es })).resolves.toMatchObject({ fallback: true });
   });
 });
 

@@ -5,9 +5,11 @@ import { AnimatePresence, motion } from "motion/react";
 import { useAgenda } from "@/components/agenda/AgendaProvider";
 import { ThemedIsotype } from "@/components/brand/Logo";
 import { useLocale, useMessages } from "@/components/i18n/MessagesProvider";
+import { useMarket } from "@/components/market/MarketProvider";
 import { interpolate } from "@/i18n/interpolate";
 import {
   buildMailtoHref,
+  buildBriefReport,
   completedCount,
   formatStepAnswer,
   getBriefSteps,
@@ -61,6 +63,7 @@ type BriefAgentProps = { initialPrompt?: string; onClose?: () => void; };
 export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
   const messages = useMessages();
   const locale = useLocale();
+  const { market } = useMarket();
   const { open: openAgenda } = useAgenda();
   const briefSteps = getBriefSteps(messages);
   const formId = useId();
@@ -88,11 +91,14 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
   const [showTurn, setShowTurn] = useState(true);
   const [busy, setBusy] = useState(() => Boolean(initialPrompt?.trim()));
 
-  const fsmTurn = getNextAgentTurn(answers, messages, locale);
+  const fsmTurn = getNextAgentTurn(answers, messages, locale, market);
   const visibleFsmTurn = mode === "fsm" && showTurn ? fsmTurn : null;
   const currentStep = visibleFsmTurn?.kind === "step" ? visibleFsmTurn.step : null;
-  const report =
-    mode === "chat" ? chatReport : visibleFsmTurn?.kind === "report" ? visibleFsmTurn.report : null;
+  const report = mode === "chat"
+    ? chatReport
+      ? buildBriefReport(chatReport.answers, chatReport.recommendedRoute, messages, locale, market)
+      : null
+    : visibleFsmTurn?.kind === "report" ? visibleFsmTurn.report : null;
   const isComplete = Boolean(report);
   const clarifyStep =
     mode === "chat" && clarifyField
@@ -152,6 +158,7 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           locale,
+          market,
           answers: nextAnswers,
           messages: toApiMessages(nextHistory),
         }),
@@ -339,7 +346,7 @@ export function BriefAgent({ initialPrompt, onClose }: BriefAgentProps) {
       const response = await fetch("/api/brief", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale, answers: current.answers, recommendedRoute: current.recommendedRoute, email: recipient }),
+        body: JSON.stringify({ locale, market, answers: current.answers, recommendedRoute: current.recommendedRoute, email: recipient }),
       });
       const payload = (await response.json()) as { emailed?: boolean };
       if (response.ok && payload.emailed) { setSendState("sent"); return; }

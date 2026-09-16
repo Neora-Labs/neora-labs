@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
 import type { Locale } from "@/i18n/config";
 import type { Messages } from "@/i18n/messages/es";
+import type { Market } from "@/lib/market";
 import {
   buildBriefReport,
   parseBriefAnswers,
@@ -77,6 +78,7 @@ export function resolveCompletedBrief(
   answers: Partial<BriefAnswers>,
   catalog: Messages,
   locale: Locale,
+  market: Market,
   recommendation?: { route: RecommendedRoute; confidence: number },
 ): BriefReport | null {
   const complete = parseBriefAnswers(answers, catalog);
@@ -84,7 +86,7 @@ export function resolveCompletedBrief(
   const route = recommendation
     ? resolveRecommendedRoute(recommendation.route, recommendation.confidence)
     : recommendRouteFromAnswers(complete.answers);
-  return buildBriefReport(complete.answers, route, catalog, locale);
+  return buildBriefReport(complete.answers, route, catalog, locale, market);
 }
 
 export function buildBriefAgentSystemPrompt(catalog: Messages, language: Locale): string {
@@ -95,10 +97,10 @@ export function buildBriefAgentSystemPrompt(catalog: Messages, language: Locale)
     "Use only the schema IDs. Be concise and ask for the next missing field.",
   ].join("\n");
 }
-export async function runBriefChatTurn(options: { locale: Locale; history: BriefChatMessage[]; answers: Partial<BriefAnswers>; catalog: Messages }): Promise<BriefChatResponse> {
-  const { locale, history, answers, catalog } = options;
+export async function runBriefChatTurn(options: { locale: Locale; market: Market; history: BriefChatMessage[]; answers: Partial<BriefAnswers>; catalog: Messages }): Promise<BriefChatResponse> {
+  const { locale, market, history, answers, catalog } = options;
   if (!hasOpenAiKey() || countUserTurns(history) > MAX_CHAT_TURNS) {
-    return deterministicFallback(answers, catalog, locale);
+    return deterministicFallback(answers, catalog, locale, market);
   }
 
   try {
@@ -110,11 +112,11 @@ export async function runBriefChatTurn(options: { locale: Locale; history: Brief
       messages: toModelMessages(history, answers),
     });
     const parsedTurn = parseAdvisoryTurn(rawObject);
-    if (!parsedTurn.success) return deterministicFallback(answers, catalog, locale);
+    if (!parsedTurn.success) return deterministicFallback(answers, catalog, locale, market);
 
     const object = parsedTurn.data;
     const merged = mergeChatSlots(answers, object, catalog);
-    const completed = resolveCompletedBrief(merged, catalog, locale, {
+    const completed = resolveCompletedBrief(merged, catalog, locale, market, {
       route: object.recommendedRoute,
       confidence: object.routeConfidence,
     });
@@ -123,7 +125,7 @@ export async function runBriefChatTurn(options: { locale: Locale; history: Brief
     }
     return { fallback: false, reply: object.reply.trim() || null, answers: merged, clarifyField: resolveClarifyField(merged, object.clarifyField), report: null };
   } catch {
-    return deterministicFallback(answers, catalog, locale);
+    return deterministicFallback(answers, catalog, locale, market);
   }
 }
 function mergeChatSlots(current: Partial<BriefAnswers>, turn: AdvisoryTurn, catalog: Messages): Partial<BriefAnswers> {
@@ -138,8 +140,8 @@ function mergeChatSlots(current: Partial<BriefAnswers>, turn: AdvisoryTurn, cata
   return next;
 }
 function resolveClarifyField(answers: Partial<BriefAnswers>, requested: BriefStepId | null): BriefStepId | null { const missing = nextIncompleteField(answers); return requested && !answers[requested] ? requested : missing; }
-function deterministicFallback(answers: Partial<BriefAnswers>, catalog: Messages, locale: Locale): BriefChatResponse {
-  const report = resolveCompletedBrief(answers, catalog, locale);
+function deterministicFallback(answers: Partial<BriefAnswers>, catalog: Messages, locale: Locale, market: Market): BriefChatResponse {
+  const report = resolveCompletedBrief(answers, catalog, locale, market);
   return { fallback: true, reply: null, answers: report?.answers ?? answers, clarifyField: null, report };
 }
 function toModelMessages(history: BriefChatMessage[], answers: Partial<BriefAnswers>): Array<{ role: "user" | "assistant"; content: string }> { return [{ role: "user", content: `Confirmed slots (JSON): ${JSON.stringify(answers)}` }, ...history.map((message) => ({ role: message.role === "agent" ? "assistant" as const : "user" as const, content: message.text }))]; }

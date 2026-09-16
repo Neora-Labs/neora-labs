@@ -7,6 +7,7 @@ import {
   runBriefChatTurn,
   sanitizePartialAnswers,
 } from "@/lib/brief-agent";
+import { isMarket } from "@/lib/market";
 
 export async function POST(request: Request) {
   const fallback = getMessages(defaultLocale);
@@ -25,6 +26,10 @@ export async function POST(request: Request) {
   const requested = typeof payload.locale === "string" ? payload.locale : null;
   const locale = isLocale(requested) ? requested : defaultLocale;
   const messages = getMessages(locale);
+  if (!isMarket(payload.market)) {
+    return Response.json({ error: messages.brief.invalidPayload }, { status: 400 });
+  }
+  const market = payload.market;
   const history = parseChatHistory(payload.messages);
   if (history === null) {
     return Response.json({ error: messages.brief.invalidPayload }, { status: 400 });
@@ -45,6 +50,7 @@ export async function POST(request: Request) {
   try {
     const turn = await runBriefChatTurn({
       locale,
+      market,
       history,
       answers,
       catalog: messages,
