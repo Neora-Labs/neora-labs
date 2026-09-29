@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "4.0.50",
+    "@vercel/analytics": "^2.0.1",
     "ai": "7.0.83",
     "motion": "13.1.1",
     "next": "16.3.5",

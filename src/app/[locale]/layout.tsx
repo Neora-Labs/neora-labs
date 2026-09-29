@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
+import { Analytics } from "@vercel/analytics/next";
 import { AgendaProvider } from "@/components/agenda/AgendaProvider";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -113,6 +114,7 @@ export default async function LocaleLayout({
               <Header />
               {children}
               <Footer footer={messages.footer} navItems={messages.navItems} site={messages.site} locale={locale} />
+              <Analytics />
             </AgendaProvider>
           </MarketProvider>
         </MessagesProvider>
